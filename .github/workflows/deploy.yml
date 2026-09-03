@@ -1,0 +1,58 @@
+# ============================================================
+# GitHub Actions —— 自动构建并部署到 GitHub Pages
+# 触发：push 到 main 分支（或手动 workflow_dispatch）
+# 效果：改 site/src 后只需 git push，服务器自动 npm run build 并发布
+# ============================================================
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # 允许在 Actions 页面手动触发
+
+# 给 GITHUB_TOKEN 授权：可读代码、可写 Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只跑一个部署，新的会排队等旧的完成
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site   # 所有 run 都在 site/ 下执行
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (Astro)
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # 把 site/dist 构建产物作为 Pages 内容上传
+          path: site/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
