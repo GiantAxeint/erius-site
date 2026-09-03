@@ -1,34 +1,39 @@
 ---
 // 日历卡：当月日历，今日高亮
-// 高亮逻辑：客户端 JS 取浏览器本地日期，d === 今天 时加 .today 类
+// 渲染策略：格子由 Astro 静态渲染（保证 data-astro-cid 作用域，CSS 生效）
+// JS 只负责：① 显示标题（带客户端时区判断）② 填数字 ③ 给"今天"加 .today 类
+// 这样每月跨月/首次访问都能正确高亮，无需重建
+const now = new Date();
+const y = now.getFullYear();
+const m = now.getMonth();
+const todayNum = now.getDate();
+// 当月第一天周几（周一=0…周日=6）
+const firstDay = new Date(y, m, 1).getDay();
+const offset = (firstDay + 6) % 7;
+const daysInMonth = new Date(y, m + 1, 0).getDate();
+const blanks = Array.from({ length: offset }, () => 0);
+const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 ---
 <div class="card cal">
-  <div class="cal-head" id="cal-title">----</div>
+  <div class="cal-head" id="cal-title">{y}年{m + 1}月</div>
   <div class="cal-grid cal-dow-row">
     {['一','二','三','四','五','六','日'].map(d => <span class="cal-dow">{d}</span>)}
   </div>
-  <div class="cal-grid" id="cal-body"></div>
+  <div class="cal-grid">
+    {blanks.map(() => <span class="cal-empty" />)}
+    {days.map(n => <span class="cal-day" data-d={n} />)}
+  </div>
 </div>
 
 <script>
-  const title = document.getElementById('cal-title');
-  const body = document.getElementById('cal-body');
-  if (title && body) {
-    const now = new Date();
-    const y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
-    title.textContent = `${y}年${m + 1}月`;
-    // 当月第一天是周几（周一=0…周日=6）
-    const first = new Date(y, m, 1).getDay();
-    const offset = (first + 6) % 7;
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    let html = '';
-    for (let i = 0; i < offset; i++) html += '<span class="cal-empty"></span>';
-    for (let d = 1; d <= daysInMonth; d++) {
-      // 今日：加 .today 类，高亮背景 + 加粗
-      html += `<span class="cal-day${d === today ? ' today' : ''}">${d}</span>`;
-    }
-    body.innerHTML = html;
-  }
+  // 在客户端按用户实际时区更新"今天"高亮（每月跨月时无需重新构建）
+  const now = new Date();
+  const today = now.getDate();
+  document.querySelectorAll<HTMLElement>('.cal-day').forEach((el) => {
+    const d = Number(el.dataset.d);
+    el.textContent = String(d);
+    if (d === today) el.classList.add('today');
+  });
 </script>
 
 <style>
@@ -37,13 +42,12 @@
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .cal-dow { font-size: 0.75rem; color: var(--color-secondary); padding: 2px 0; }
   .cal-dow-row { margin-bottom: 4px; }
-  /* 普通日期格子 */
   .cal-day {
     font-size: 0.85rem; padding: 5px 0; border-radius: 6px;
     display: flex; align-items: center; justify-content: center;
     aspect-ratio: 1 / 1; max-height: 30px; margin: 0 auto;
   }
-  /* 今天：品牌色圆形高亮 + 白字 + 外圈光晕 */
+  /* 今日：品牌色圆形高亮 + 白字 + 外圈光晕 */
   .cal-day.today {
     background: var(--color-brand);
     color: #fff;
