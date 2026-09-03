@@ -57,7 +57,7 @@ export const profile: Profile = {
   tagline: 'AI Grad Student · Obsidian Plugin Maker · Agent Tinkerer',
   intro: 'Regain lost courage!',
   avatarText: 'E',
-  avatarImage: 'site/public/avatar.png', // 放图到 site/public/avatar.png 后改成 '/avatar.png'
+  avatarImage: '/avatar.png', // 放图到 site/public/avatar.png 后改成 '/avatar.png'
 };
 
 // ---------- 2. "About Me" 内容（改这里） ----------
