@@ -8,8 +8,10 @@ const { items } = Astro.props;
   <h3 class="card-title hand">Projects</h3>
   <ul class="projects">
     {items.map(p => (
-      <li class="project">
-        <div class="project-title">{p.title}</div>
+    <li class="project">
+  <a class="project-title-link" href={p.href} target="_blank" rel="noopener">
+    {p.title}
+  </a>
         <p class="project-desc">{p.description}</p>
         <div class="tags">
           {p.tags.map(t => <span class="tag">{t}</span>)}
