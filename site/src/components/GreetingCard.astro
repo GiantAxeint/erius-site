@@ -1,0 +1,26 @@
+---
+// 问候卡：手写体大标题 + 时间感知问候语
+interface Props { name: string; intro: string; }
+const { name, intro } = Astro.props;
+---
+<div class="card greet">
+  <p class="hand hello" id="greet-phrase">Hello</p>
+  <h1 class="hand">I'm {name}</h1>
+  <p class="intro">{intro}</p>
+</div>
+
+<script>
+  // 按本地时间切换问候语（静态外壳 + 客户端增强）
+  const el = document.getElementById('greet-phrase');
+  if (el) {
+    const h = new Date().getHours();
+    el.textContent = h < 6 ? 'Good Night' : h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
+  }
+</script>
+
+<style>
+  .greet { text-align: center; padding: 34px 22px; }
+  .hello { font-size: 1.4rem; color: var(--color-secondary); margin-bottom: 6px; }
+  .greet h1 { font-size: 2.8rem; margin-bottom: 10px; }
+  .intro { color: var(--color-secondary); font-size: 1.05rem; }
+</style>

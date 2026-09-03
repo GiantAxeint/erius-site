@@ -1,0 +1,26 @@
+---
+// 最新动态卡：文章列表
+import type { PostItem } from '../data/profile';
+interface Props { posts: PostItem[]; }
+const { posts } = Astro.props;
+---
+<div class="card">
+  <h3 class="card-title hand">Latest</h3>
+  <ul class="posts">
+    {posts.map(p => (
+      <li class="post">
+        <a href={p.href}><span class="post-title">{p.title}</span></a>
+        <span class="post-date">{p.date}</span>
+        <p class="post-summary">{p.summary}</p>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .card-title { font-size: 1.3rem; margin-bottom: 12px; color: var(--color-primary); }
+  .posts { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .post-title { font-weight: 600; color: var(--color-primary); font-size: 1rem; }
+  .post-date { display: block; font-size: 0.78rem; color: var(--color-secondary); margin: 2px 0 4px; }
+  .post-summary { font-size: 0.88rem; color: var(--color-secondary); line-height: 1.5; }
+</style>

@@ -1,0 +1,30 @@
+---
+// 社交矩阵卡
+import type { SocialLink } from '../data/profile';
+interface Props { links: SocialLink[]; }
+const { links } = Astro.props;
+---
+<div class="card social">
+  <h3 class="card-title hand">Contact</h3>
+  <div class="links">
+    {links.map(l => (
+      <a class="link" href={l.url} target={l.url.startsWith('http') ? '_blank' : undefined}>
+        <span class="icon">{l.icon}</span>
+        <span>{l.label}</span>
+      </a>
+    ))}
+  </div>
+</div>
+
+<style>
+  .card-title { font-size: 1.3rem; margin-bottom: 10px; color: var(--color-primary); }
+  .links { display: flex; flex-direction: column; gap: 8px; }
+  .link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-radius: 10px;
+    background: rgba(255,255,255,.4); color: var(--color-primary);
+    transition: background .15s;
+  }
+  .link:hover { background: rgba(53,191,171,.15); text-decoration: none; }
+  .icon { font-size: 1.1rem; }
+</style>

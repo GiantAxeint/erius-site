@@ -1,0 +1,30 @@
+---
+// 时钟卡：实时数字时钟（7-segment 风）
+---
+<div class="card clock">
+  <div class="time" id="clock">--:--:--</div>
+  <div class="date" id="clock-date"></div>
+</div>
+
+<script>
+  const tEl = document.getElementById('clock');
+  const dEl = document.getElementById('clock-date');
+  function pad(n: number) { return String(n).padStart(2, '0'); }
+  function tick() {
+    const now = new Date();
+    if (tEl) tEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    if (dEl) dEl.textContent = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+  }
+  tick();
+  setInterval(tick, 1000);
+</script>
+
+<style>
+  .clock { text-align: center; }
+  .time {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 2.1rem; font-weight: 700; letter-spacing: 2px;
+    color: var(--color-primary);
+  }
+  .date { color: var(--color-secondary); font-size: 0.85rem; margin-top: 4px; }
+</style>

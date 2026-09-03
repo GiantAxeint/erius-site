@@ -1,0 +1,51 @@
+---
+// Dashboard 布局：公共 head + 顶部标题栏 + 内容插槽
+import '../styles/global.css';
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  <meta name="description" content="Erius — AI grad student, Obsidian plugin maker, agent tinkerer. Regain lost courage!" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2335bfab'/%3E%3Ctext x='50' y='72' font-size='60' text-anchor='middle' fill='white'%3EE%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.cn" />
+  <link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+  <link href="https://fonts.googleapis.cn/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand hand" href="/erius-site/">Erius</a>
+    <nav>
+      <a href="/erius-site/">名片</a>
+      <a href="/erius-site/home">/home</a>
+    </nav>
+  </header>
+  <main>
+    <slot />
+  </main>
+  <footer class="foot">
+    <span>© 2026 Erius · Regain lost courage!</span>
+  </footer>
+</body>
+</html>
+
+<style>
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1280px; margin: 0 auto 20px; padding: 10px 6px;
+  }
+  .brand { font-size: 1.8rem; }
+  nav { display: flex; gap: 16px; font-size: 1.05rem; }
+  nav a { color: var(--color-primary); opacity: .7; }
+  nav a:hover { opacity: 1; }
+  .foot {
+    max-width: 1280px; margin: 26px auto 0; text-align: center;
+    color: var(--color-secondary); font-size: 0.9rem;
+  }
+</style>

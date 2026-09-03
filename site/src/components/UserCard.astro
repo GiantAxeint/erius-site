@@ -1,0 +1,34 @@
+---
+// 用户卡：头像 + 名字 + 简介 + 侧边菜单（静态渲染 + 客户端高亮）
+import { profile } from '../data/profile';
+import type { MenuItem } from '../data/profile';
+interface Props { menuItems: MenuItem[]; }
+const { menuItems } = Astro.props;
+---
+<div class="card user">
+  <div class="avatar">{profile.avatarText}</div>
+  <div class="name hand">{profile.name}</div>
+  <div class="tag">{profile.tagline}</div>
+  <nav class="menu">
+    {menuItems.map(item => <a href={item.href} data-menu={item.key}>{item.label}</a>)}
+  </nav>
+</div>
+
+<style>
+  .user { text-align: center; }
+  .avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--color-brand); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-hand); font-size: 2rem;
+    margin: 0 auto 10px;
+  }
+  .name { font-size: 1.7rem; margin-bottom: 4px; }
+  .tag { font-size: 0.85rem; color: var(--color-secondary); line-height: 1.4; margin-bottom: 16px; }
+  .menu { display: flex; flex-direction: column; gap: 4px; }
+  .menu a {
+    padding: 7px 10px; border-radius: 8px; font-size: 0.95rem;
+    color: var(--color-primary); text-align: left;
+  }
+  .menu a:hover { background: rgba(53,191,171,.12); text-decoration: none; }
+</style>

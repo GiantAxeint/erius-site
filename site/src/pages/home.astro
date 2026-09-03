@@ -1,0 +1,50 @@
+---
+// /home — Erius 多卡片个人门户（仿 lvy010 布局，去 Live2D）
+// 数据全部来自 src/data/profile.ts（契约单一数据源）
+import Layout from '../layouts/Dashboard.astro';
+import UserCard from '../components/UserCard.astro';
+import GreetingCard from '../components/GreetingCard.astro';
+import ClockCard from '../components/ClockCard.astro';
+import CalendarCard from '../components/CalendarCard.astro';
+import PostsCard from '../components/PostsCard.astro';
+import ProjectsCard from '../components/ProjectsCard.astro';
+import SocialCard from '../components/SocialCard.astro';
+import { profile, menuItems, latestPosts, projects, socialLinks } from '../data/profile';
+---
+<Layout title={`/home — ${profile.name}`}>
+  <div class="dash">
+    <aside class="left">
+      <UserCard menuItems={menuItems} />
+      <SocialCard links={socialLinks} />
+    </aside>
+    <main class="center">
+      <GreetingCard name={profile.name} intro={profile.intro} />
+      <PostsCard posts={latestPosts} />
+      <ProjectsCard items={projects} />
+    </main>
+    <aside class="right">
+      <ClockCard />
+      <CalendarCard />
+    </aside>
+  </div>
+</Layout>
+
+<style>
+  .dash {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  @media (min-width: 900px) {
+    .dash {
+      grid-template-columns: 240px 1fr 260px;
+      grid-template-areas: "left center right";
+      align-items: start;
+    }
+    .left { grid-area: left; display: flex; flex-direction: column; gap: 18px; }
+    .center { grid-area: center; display: flex; flex-direction: column; gap: 18px; }
+    .right { grid-area: right; display: flex; flex-direction: column; gap: 18px; }
+  }
+</style>

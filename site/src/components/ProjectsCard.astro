@@ -1,0 +1,32 @@
+---
+// 项目卡：作品/项目推荐
+import type { ProjectItem } from '../data/profile';
+interface Props { items: ProjectItem[]; }
+const { items } = Astro.props;
+---
+<div class="card">
+  <h3 class="card-title hand">Projects</h3>
+  <ul class="projects">
+    {items.map(p => (
+      <li class="project">
+        <div class="project-title">{p.title}</div>
+        <p class="project-desc">{p.description}</p>
+        <div class="tags">
+          {p.tags.map(t => <span class="tag">{t}</span>)}
+        </div>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .card-title { font-size: 1.3rem; margin-bottom: 12px; color: var(--color-primary); }
+  .projects { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .project-title { font-weight: 600; color: var(--color-primary); }
+  .project-desc { font-size: 0.88rem; color: var(--color-secondary); margin: 3px 0 6px; line-height: 1.5; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-size: 0.72rem; padding: 2px 8px; border-radius: 999px;
+    background: rgba(53,191,171,.14); color: var(--color-brand);
+  }
+</style>

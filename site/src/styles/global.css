@@ -1,0 +1,81 @@
+/* erius-site /home dashboard 全局样式
+   主题令牌：沿用 lvy010 调研配色，微调成 Erius 青绿系 */
+:root {
+  /* 颜色令牌 */
+  --color-brand: #35bfab;
+  --color-primary: #334f52;
+  --color-secondary: #7b888e;
+  --color-brand-secondary: #1fc9e7;
+  --color-bg: #eeeeee;
+  --color-border: rgba(255, 255, 255, 0.6);
+  --color-card: rgba(255, 255, 255, 0.55);
+  --color-article: rgba(255, 255, 255, 0.8);
+
+  /* 圆角与阴影 */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --shadow-card: 0 4px 20px rgba(51, 79, 82, 0.08);
+
+  /* 字体 */
+  --font-hand: 'Caveat', cursive;
+  --font-body: 'Kalam', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-body);
+  color: var(--color-primary);
+}
+
+body {
+  min-height: 100vh;
+  /* 浅灰绿渐变背景，参考 lvy010 但更柔和 */
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(53, 191, 171, 0.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(31, 201, 231, 0.10), transparent 55%),
+    var(--color-bg);
+  padding: 24px;
+}
+
+/* 卡片通用 */
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(8px);
+  padding: 20px 22px;
+}
+
+/* 手写标题 */
+.hand {
+  font-family: var(--font-hand);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+a {
+  color: var(--color-brand);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-brand-secondary);
+  text-decoration: underline;
+}
+
+/* 响应式栅格工具 */
+.grid {
+  display: grid;
+  gap: 18px;
+}
+
+@media (min-width: 900px) {
+  body {
+    padding: 28px 40px;
+  }
+}

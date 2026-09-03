@@ -1,0 +1,47 @@
+---
+// 首页：极简手写风名片（路线 C 的 "/" 首页）
+// 与线上 index.html 同风格，由 Astro 托管，加一个到 /home 的入口
+import { profile } from '../data/profile';
+import { socialLinks } from '../data/profile';
+import '../styles/global.css';
+---
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Erius — Regain lost courage!</title>
+  <meta name="description" content="Erius — AI grad student, Obsidian plugin maker, agent tinkerer." />
+  <link rel="preconnect" href="https://fonts.googleapis.cn" />
+  <link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+  <link href="https://fonts.googleapis.cn/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    body { background: #e8f8f5; color: #1a1a1a; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; margin: 0; }
+    .container { text-align: center; max-width: 600px; }
+    h1 { font-family: 'Caveat', cursive; font-size: 3.5rem; font-weight: 700; margin-bottom: 1rem; line-height: 1.2; }
+    p { font-family: 'Kalam', cursive; font-size: 1.3rem; margin-bottom: 2rem; color: #333; }
+    .contact { display: flex; flex-direction: column; gap: 0.8rem; font-size: 1.15rem; color: #555; }
+    a { color: #2d9a8c; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .enter { margin-top: 2.5rem; font-size: 1.05rem; }
+    .enter a { display: inline-block; padding: 8px 22px; border: 2px solid #2d9a8c; border-radius: 999px; transition: all .2s; }
+    .enter a:hover { background: #2d9a8c; color: #fff; text-decoration: none; }
+    @media (max-width: 600px) { h1 { font-size: 2.8rem; } p { font-size: 1.2rem; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hi, {profile.name} Here.</h1>
+    <p>{profile.intro}</p>
+    <div class="contact">
+      {
+        socialLinks.filter(l => l.label !== 'Home').map(l => (
+          <div class="contact-item">* {l.label}: <a href={l.url} target={l.label === 'GitHub' ? '_blank' : undefined}>{l.label === 'GitHub' ? '@GiantAxeint' : '2890386344@qq.com'}</a></div>
+        ))
+      }
+    </div>
+    <div class="enter">
+      <a href="/erius-site/home">进入 /home 门户 →</a>
+    </div>
+  </div>
+</body>
+</html>
