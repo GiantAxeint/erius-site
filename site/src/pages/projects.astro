@@ -1,0 +1,60 @@
+---
+// /projects — 项目列表页（每行 3 卡网格）
+import Layout from '../layouts/Dashboard.astro';
+import { projects } from '../data/profile';
+---
+<Layout title="我的项目 — Erius">
+  <div class="page-head">
+    <h1 class="hand">我的项目</h1>
+    <p class="sub">折腾过的作品 · 代码在 GitHub</p>
+  </div>
+  <div class="grid3">
+    {projects.map(p => (
+      <div class="card proj-card">
+        <a class="pr-title" href={p.href} target="_blank" rel="noopener">{p.title}</a>
+        <p class="pr-desc">{p.description}</p>
+        <div class="tags">
+          {p.tags.map(t => <span class="tag">{t}</span>)}
+        </div>
+        <a class="pr-link" href={p.href} target="_blank" rel="noopener">GitHub 仓库 →</a>
+      </div>
+    ))}
+  </div>
+  {projects.length === 0 && <div class="card empty">还没有项目，敬请期待。</div>}
+</Layout>
+
+<style>
+  .page-head { max-width: 1080px; margin: 0 auto 24px; }
+  .page-head h1 { font-size: 2.4rem; color: var(--color-primary); }
+  .page-head .sub { color: var(--color-secondary); margin-top: 6px; }
+  /* 每行 3 卡：桌面 3 列，平板 2 列，手机 1 列 */
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  @media (max-width: 900px) { .grid3 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .grid3 { grid-template-columns: 1fr; } }
+  .proj-card {
+    display: flex; flex-direction: column;
+    min-height: 200px;                /* 统一卡片高度 */
+    transition: transform .15s, box-shadow .15s;
+  }
+  .proj-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(51, 79, 82, 0.14);
+  }
+  .pr-title { font-size: 1.15rem; font-weight: 600; color: var(--color-primary); margin-bottom: 8px; }
+  .pr-title:hover { color: var(--color-brand); text-decoration: underline; }
+  .pr-desc { font-size: 0.88rem; color: var(--color-secondary); line-height: 1.6; flex: 1; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 14px; }
+  .tag {
+    font-size: 0.72rem; padding: 2px 8px; border-radius: 999px;
+    background: rgba(53,191,171,.14); color: var(--color-brand);
+  }
+  .pr-link { font-size: 0.85rem; color: var(--color-brand); }
+  .pr-link:hover { text-decoration: underline; }
+  .empty { text-align: center; color: var(--color-secondary); max-width: 1080px; margin: 0 auto; }
+</style>

@@ -1,6 +1,6 @@
 ---
-// /home — Erius 多卡片个人门户（仿 lvy010 布局，去 Live2D）
-// 数据全部来自 src/data/profile.ts（契约单一数据源）
+// /home — Erius 门户 dashboard（菜单项已指向独立页 /posts /projects /about）
+// 本页保留问候 + 精选概览卡片；完整列表在独立页面
 import Layout from '../layouts/Dashboard.astro';
 import UserCard from '../components/UserCard.astro';
 import GreetingCard from '../components/GreetingCard.astro';
@@ -16,23 +16,13 @@ import { profile, menuItems, latestPosts, projects, socialLinks } from '../data/
   <div class="dash">
     <aside class="left">
       <UserCard menuItems={menuItems} />
-      <section id="links">
-        <SocialCard links={socialLinks} />
-      </section>
+      <SocialCard links={socialLinks} />
     </aside>
     <main class="center">
-      <section id="home">
-        <GreetingCard name={profile.name} intro={profile.intro} />
-      </section>
-      <section id="about">
-        <AboutCard />
-      </section>
-      <section id="posts">
-        <PostsCard posts={latestPosts} />
-      </section>
-      <section id="projects">
-        <ProjectsCard items={projects} />
-      </section>
+      <GreetingCard name={profile.name} intro={profile.intro} />
+      <AboutCard />
+      <PostsCard posts={latestPosts} />
+      <ProjectsCard items={projects} />
     </main>
     <aside class="right">
       <ClockCard />
@@ -49,10 +39,6 @@ import { profile, menuItems, latestPosts, projects, socialLinks } from '../data/
     max-width: 1280px;
     margin: 0 auto;
   }
-  /* 锚点滚动时不被顶栏遮挡 */
-  .center section, .left section {
-    scroll-margin-top: 70px;
-  }
   @media (min-width: 900px) {
     .dash {
       grid-template-columns: 240px 1fr 260px;
@@ -63,6 +49,4 @@ import { profile, menuItems, latestPosts, projects, socialLinks } from '../data/
     .center { grid-area: center; display: flex; flex-direction: column; gap: 18px; }
     .right { grid-area: right; display: flex; flex-direction: column; gap: 18px; }
   }
-  /* 平滑滚动到锚点 */
-  html { scroll-behavior: smooth; }
 </style>

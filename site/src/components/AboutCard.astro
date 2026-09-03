@@ -1,14 +1,17 @@
 ---
-// 关于我卡片（菜单 #about 锚点目标）
+// 关于我卡片（home 预览版，完整版在 /about 独立页）
 import { aboutContent } from '../data/profile';
 ---
-<div class="card" id="about">
+<div class="card">
   <h3 class="card-title hand">{aboutContent.heading}</h3>
   {aboutContent.paragraphs.map(p => <p class="para">{p}</p>)}
+  <a class="more" href="/about">查看完整介绍 →</a>
 </div>
 
 <style>
   .card-title { font-size: 1.3rem; margin-bottom: 10px; color: var(--color-primary); }
   .para { font-size: 0.92rem; color: var(--color-secondary); line-height: 1.7; margin-bottom: 8px; }
-  .para:last-child { margin-bottom: 0; }
+  .para:last-child { margin-bottom: 10px; }
+  .more { font-size: 0.88rem; color: var(--color-brand); }
+  .more:hover { text-decoration: underline; }
 </style>

@@ -22,6 +22,7 @@ function fmtDate(iso: string): string {
       </li>
     ))}
   </ul>
+  <a class="more" href="/posts">查看全部文章 →</a>
 </div>
 
 <style>
@@ -30,4 +31,6 @@ function fmtDate(iso: string): string {
   .post-title { font-weight: 600; color: var(--color-primary); font-size: 1rem; }
   .post-date { display: block; font-size: 0.78rem; color: var(--color-secondary); margin: 2px 0 4px; }
   .post-summary { font-size: 0.88rem; color: var(--color-secondary); line-height: 1.5; }
+  .more { font-size: 0.88rem; color: var(--color-brand); margin-top: 4px; display: inline-block; }
+  .more:hover { text-decoration: underline; }
 </style>

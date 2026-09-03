@@ -49,6 +49,7 @@ export interface ProjectItem {
   title: string;
   description: string;
   tags: string[];
+  href: string;  // GitHub 仓库链接
 }
 
 // ---------- 1. 你的基本信息（改这里） ----------
@@ -72,10 +73,9 @@ export const aboutContent = {
 
 // ---------- 3. 侧边菜单（一般不用改） ----------
 export const menuItems: MenuItem[] = [
-  { key: 'posts', label: '近期文章', href: '#posts' },
-  { key: 'projects', label: '我的项目', href: '#projects' },
-  { key: 'about', label: '关于我', href: '#about' },
-  { key: 'links', label: '友链', href: '#links' },
+  { key: 'posts', label: '近期文章', href: '/posts' },
+  { key: 'projects', label: '我的项目', href: '/projects' },
+  { key: 'about', label: '关于我', href: '/about' },
 ];
 
 // ---------- 4. 社交链接（改这里） ----------
@@ -107,5 +107,6 @@ export const projects: ProjectItem[] = [
     title: 'Agent Harness 折腾记',
     description: 'dsh / opencode / Claude Code / Codex 全家桶落地',
     tags: ['Agent', 'CLI'],
+    href: 'https://github.com/GiantAxeint',  // 无独立仓库时指向 GitHub 主页
   },
 ];

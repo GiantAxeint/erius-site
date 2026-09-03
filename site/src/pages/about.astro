@@ -1,0 +1,61 @@
+---
+// /about — 关于我独立页面（左侧菜单"关于我"跳转到此）
+import Layout from '../layouts/Dashboard.astro';
+import { profile, aboutContent, socialLinks } from '../data/profile';
+---
+<Layout title="关于我 — Erius">
+  <div class="page-head">
+    <h1 class="hand">关于我</h1>
+    <p class="sub">{profile.tagline}</p>
+  </div>
+  <div class="card about-card">
+    <div class="about-top">
+      {
+        profile.avatarImage
+          ? <img class="avatar img" src={profile.avatarImage} alt={profile.name} />
+          : <div class="avatar text">{profile.avatarText}</div>
+      }
+      <div class="about-head">
+        <h2 class="about-name">{profile.name}</h2>
+        <p class="about-intro">{profile.intro}</p>
+      </div>
+    </div>
+    {aboutContent.paragraphs.map(p => <p class="para">{p}</p>)}
+    <div class="links-row">
+      {socialLinks.filter(l => l.label !== 'Home').map(l => (
+        <a class="soc" href={l.url} target={l.url.startsWith('http') ? '_blank' : undefined}>
+          <span class="soc-icon">{l.icon}</span>{l.label}
+        </a>
+      ))}
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .page-head { max-width: 720px; margin: 0 auto 24px; }
+  .page-head h1 { font-size: 2.4rem; color: var(--color-primary); }
+  .page-head .sub { color: var(--color-secondary); margin-top: 6px; }
+  .about-card { max-width: 720px; margin: 0 auto; padding: 32px 30px; }
+  .about-top { display: flex; align-items: center; gap: 20px; margin-bottom: 22px; }
+  .avatar { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .avatar.text {
+    background: var(--color-brand); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-hand); font-size: 2.6rem;
+  }
+  .about-name { font-size: 1.7rem; color: var(--color-primary); margin-bottom: 4px; }
+  .about-intro { color: var(--color-secondary); }
+  .para { font-size: 1rem; color: var(--color-primary); line-height: 1.9; margin-bottom: 14px; }
+  .links-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 24px; }
+  .soc {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 999px;
+    background: rgba(53,191,171,.12); color: var(--color-brand);
+    font-size: 0.9rem;
+  }
+  .soc:hover { background: rgba(53,191,171,.22); text-decoration: none; }
+  @media (max-width: 480px) {
+    .about-top { flex-direction: column; text-align: center; }
+    .links-row { justify-content: center; }
+  }
+</style>

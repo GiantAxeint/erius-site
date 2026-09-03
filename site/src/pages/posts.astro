@@ -1,0 +1,53 @@
+---
+// /posts — 文章列表页（每行 3 卡网格）
+import Layout from '../layouts/Dashboard.astro';
+import { latestPosts } from '../data/profile';
+---
+<Layout title="近期文章 — Erius">
+  <div class="page-head">
+    <h1 class="hand">近期文章</h1>
+    <p class="sub">一些折腾记录与想法</p>
+  </div>
+  <div class="grid3">
+    {latestPosts.map(p => (
+      <a class="card post-card" href={p.href === '#' ? '#' : p.href}>
+        <span class="pc-date">{p.date}</span>
+        <span class="pc-title">{p.title}</span>
+        <p class="pc-summary">{p.summary}</p>
+        <span class="pc-more">阅读 →</span>
+      </a>
+    ))}
+  </div>
+  {latestPosts.length === 0 && <div class="card empty">还没有文章，敬请期待。</div>}
+</Layout>
+
+<style>
+  .page-head { max-width: 1080px; margin: 0 auto 24px; }
+  .page-head h1 { font-size: 2.4rem; color: var(--color-primary); }
+  .page-head .sub { color: var(--color-secondary); margin-top: 6px; }
+  /* 每行 3 卡：桌面 3 列，平板 2 列，手机 1 列 */
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  @media (max-width: 900px) { .grid3 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .grid3 { grid-template-columns: 1fr; } }
+  .post-card {
+    display: flex; flex-direction: column;
+    min-height: 200px;                /* 统一卡片高度 */
+    text-decoration: none; color: var(--color-primary);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .post-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(51, 79, 82, 0.14);
+  }
+  .pc-date { font-size: 0.78rem; color: var(--color-secondary); margin-bottom: 8px; }
+  .pc-title { font-size: 1.15rem; font-weight: 600; line-height: 1.4; margin-bottom: 10px; }
+  .pc-summary { font-size: 0.88rem; color: var(--color-secondary); line-height: 1.6; flex: 1; }
+  .pc-more { margin-top: 14px; font-size: 0.85rem; color: var(--color-brand); }
+  .empty { text-align: center; color: var(--color-secondary); max-width: 1080px; margin: 0 auto; }
+</style>

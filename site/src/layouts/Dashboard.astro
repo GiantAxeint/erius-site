@@ -1,10 +1,13 @@
 ---
-// Dashboard 布局：公共 head + 顶部标题栏 + 内容插槽
+// Dashboard 布局：公共 head + 顶部导航（所有页共享）+ 内容插槽
+// 顶栏含：品牌 + 菜单（近期文章/我的项目/关于我）+ 名片/门户入口
 import '../styles/global.css';
+import { menuItems } from '../data/profile';
 interface Props {
   title: string;
 }
 const { title } = Astro.props;
+const path = Astro.url.pathname;
 ---
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -21,9 +24,16 @@ const { title } = Astro.props;
 <body>
   <header class="topbar">
     <a class="brand hand" href="/">Erius</a>
-    <nav>
+    <nav class="main-nav">
+      {menuItems.map(item => (
+        <a
+          href={item.href}
+          class:list={[{ 'nav-active': path.startsWith(item.href) }]}
+        >{item.label}</a>
+      ))}
+      <span class="nav-sep"></span>
+      <a href="/home" class:list={[{ 'nav-active': path === '/home' }]}>门户</a>
       <a href="/">名片</a>
-      <a href="/home">/home</a>
     </nav>
   </header>
   <main>
@@ -38,14 +48,20 @@ const { title } = Astro.props;
 <style>
   .topbar {
     display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px 16px;
     max-width: 1280px; margin: 0 auto 20px; padding: 10px 6px;
   }
   .brand { font-size: 1.8rem; }
-  nav { display: flex; gap: 16px; font-size: 1.05rem; }
-  nav a { color: var(--color-primary); opacity: .7; }
-  nav a:hover { opacity: 1; }
+  .main-nav { display: flex; align-items: center; gap: 14px; font-size: 1rem; flex-wrap: wrap; }
+  .main-nav a { color: var(--color-primary); opacity: .65; padding: 2px 2px; }
+  .main-nav a:hover { opacity: 1; }
+  .main-nav a.nav-active { opacity: 1; color: var(--color-brand); font-weight: 600; }
+  .nav-sep { width: 1px; height: 16px; background: var(--color-secondary); opacity: .4; }
   .foot {
     max-width: 1280px; margin: 26px auto 0; text-align: center;
     color: var(--color-secondary); font-size: 0.9rem;
+  }
+  @media (max-width: 560px) {
+    .topbar { flex-direction: column; align-items: flex-start; }
   }
 </style>

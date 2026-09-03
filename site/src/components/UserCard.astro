@@ -1,9 +1,11 @@
 ---
-// 用户卡：头像 + 名字 + 简介 + 侧边菜单（静态渲染 + 客户端高亮）
+// 用户卡：头像 + 名字 + 简介 + 侧边菜单
+// 菜单指向独立页（/posts /projects /about），进入对应页自动高亮
 import { profile } from '../data/profile';
 import type { MenuItem } from '../data/profile';
 interface Props { menuItems: MenuItem[]; }
 const { menuItems } = Astro.props;
+const path = Astro.url.pathname;
 ---
 <div class="card user">
   {
@@ -14,37 +16,16 @@ const { menuItems } = Astro.props;
   <div class="name hand">{profile.name}</div>
   <div class="tag">{profile.tagline}</div>
   <nav class="menu">
-    {menuItems.map(item => <a href={item.href} data-menu={item.key}>{item.label}</a>)}
+    {menuItems.map(item => (
+      // 当前所在页高亮（pathname 匹配菜单 href）
+      <a
+        href={item.href}
+        data-menu={item.key}
+        class:list={[{ active: path.startsWith(item.href) }]}
+      >{item.label}</a>
+    ))}
   </nav>
 </div>
-
-<script>
-  // 滚动高亮：观察各区块，当前可视区块对应的菜单项加 .active
-  const menuLinks = Array.from(document.querySelectorAll('[data-menu]')) as HTMLElement[];
-  const sections = menuLinks
-    .map(a => a.dataset.menu)
-    .map(key => key && document.getElementById(key))
-    .filter((el): el is HTMLElement => !!el);
-
-  if ('IntersectionObserver' in window && sections.length && menuLinks.length) {
-    const setActive = (key: string) => {
-      menuLinks.forEach(a => a.classList.toggle('active', a.dataset.menu === key));
-    };
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // 取最靠上的可视区块
-        const visible = entries.filter(e => e.isIntersecting);
-        if (visible.length) {
-          // 选离视口顶部最近的
-          visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-          setActive(visible[0].target.id);
-        }
-      },
-      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
-    );
-    sections.forEach(s => observer.observe(s));
-  }
-</script>
 
 <style>
   .user { text-align: center; }
