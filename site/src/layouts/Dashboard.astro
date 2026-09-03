@@ -1,6 +1,7 @@
 ---
 // Dashboard 布局：公共 head + 顶部导航（所有页共享）+ 内容插槽
-// 顶栏含：品牌 + 菜单（近期文章/我的项目/关于我）+ 名片/门户入口
+// 顶栏含：返回按钮（子页显示）+ 品牌 + 菜单
+// 返回按钮：访问子页（/about /projects /tinkering /journal /404）时左上角显示，点击回 /home
 import '../styles/global.css';
 import { menuItems } from '../data/profile';
 interface Props {
@@ -8,6 +9,9 @@ interface Props {
 }
 const { title } = Astro.props;
 const path = Astro.url.pathname;
+// 是否在主页门户（主页不显示返回按钮）
+const isHome = path === '/home' || path === '/home/' || path === '/home/index.html';
+const isSubPage = !isHome && path !== '/' && path !== '/index.html';
 ---
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -23,7 +27,14 @@ const path = Astro.url.pathname;
 </head>
 <body>
   <header class="topbar">
-    <a class="brand hand" href="/">Erius</a>
+    <div class="top-left">
+      {isSubPage && (
+        <a class="back-home" href="/home" title="返回主页">
+          <span class="back-arrow">←</span> 返回
+        </a>
+      )}
+      <a class="brand hand" href="/">Erius</a>
+    </div>
     <nav class="main-nav">
       {menuItems.map(item => (
         <a
@@ -51,7 +62,24 @@ const path = Astro.url.pathname;
     flex-wrap: wrap; gap: 8px 16px;
     max-width: 1280px; margin: 0 auto 20px; padding: 10px 6px;
   }
+  .top-left { display: flex; align-items: center; gap: 12px; }
   .brand { font-size: 1.8rem; }
+  /* 返回主页按钮（子页左上角） */
+  .back-home {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 14px 6px 10px;
+    border: 2px solid var(--color-brand);
+    border-radius: 999px;
+    color: var(--color-brand);
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: all .18s;
+    white-space: nowrap;
+  }
+  .back-home:hover {
+    background: var(--color-brand); color: #fff; text-decoration: none;
+  }
+  .back-arrow { font-size: 1.1rem; }
   .main-nav { display: flex; align-items: center; gap: 14px; font-size: 1rem; flex-wrap: wrap; }
   .main-nav a { color: var(--color-primary); opacity: .65; padding: 2px 2px; }
   .main-nav a:hover { opacity: 1; }
@@ -61,7 +89,9 @@ const path = Astro.url.pathname;
     max-width: 1280px; margin: 26px auto 0; text-align: center;
     color: var(--color-secondary); font-size: 0.9rem;
   }
-  @media (max-width: 560px) {
-    .topbar { flex-direction: column; align-items: flex-start; }
+  @media (max-width: 700px) {
+    .topbar { flex-direction: column; align-items: stretch; }
+    .top-left { justify-content: space-between; }
+    .main-nav { justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; }
   }
 </style>
