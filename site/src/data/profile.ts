@@ -64,9 +64,9 @@ export const profile: Profile = {
 export const aboutContent = {
   heading: 'About Me',
   paragraphs: [
-    '我是 Erius，阜阳师范大学智能科学与技术硕士在读。',
-    '喜欢 AI Agent 与 LLM：折腾过 dsh / opencode / Claude Code / Codex，写过 Obsidian 插件。',
-    '这个站记录我的折腾与成长 —— Regain lost courage!',
+    '我是 Erius，研究生在读',
+    '爱折腾各种Agent、人文社科和摸鱼',
+    '这里记录各种项目、文章、以及折腾日记',
   ],
 };
 
