@@ -40,6 +40,16 @@ export const profile: Profile = {
   avatarText: 'E',
 };
 
+// "关于我"区块内容（菜单 #about 锚点指向）
+export const aboutContent = {
+  heading: 'About Me',
+  paragraphs: [
+    '我是 Erius，阜阳师范大学智能科学与技术硕士在读。',
+    '喜欢 AI Agent 与 LLM：折腾过 dsh / opencode / Claude Code / Codex，写过 Obsidian 插件。',
+    '这个站记录我的折腾与成长 —— Regain lost courage!',
+  ],
+};
+
 export const menuItems: MenuItem[] = [
   { key: 'posts', label: '近期文章', href: '#posts' },
   { key: 'projects', label: '我的项目', href: '#projects' },
@@ -50,7 +60,7 @@ export const menuItems: MenuItem[] = [
 export const socialLinks: SocialLink[] = [
   { label: 'Email', url: 'mailto:2890386344@qq.com', icon: '✉' },
   { label: 'GitHub', url: 'https://github.com/GiantAxeint', icon: '◈' },
-  { label: 'Home', url: '/erius-site/', icon: '⌂' },
+  { label: 'Home', url: '/', icon: '⌂' },
 ];
 
 // 静态示例数据 —— 后续接真实文章/项目时替换
