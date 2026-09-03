@@ -101,6 +101,7 @@ export const projects: ProjectItem[] = [
     title: 'Obsidian AI 插件',
     description: 'AI-powered article polisher (luobi-polish)',
     tags: ['Obsidian', 'LLM'],
+    href: 'https://github.com/GiantAxeint/luobi-polish',
   },
   {
     title: 'Agent Harness 折腾记',
