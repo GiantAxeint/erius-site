@@ -3,6 +3,13 @@
 import type { PostItem } from '../data/profile';
 interface Props { posts: PostItem[]; }
 const { posts } = Astro.props;
+
+// 把 ISO 日期 (2026-09-04) 转成友好中文格式
+function fmtDate(iso: string): string {
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d.getTime())) return iso;
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
 ---
 <div class="card">
   <h3 class="card-title hand">Latest</h3>
@@ -10,7 +17,7 @@ const { posts } = Astro.props;
     {posts.map(p => (
       <li class="post">
         <a href={p.href}><span class="post-title">{p.title}</span></a>
-        <span class="post-date">{p.date}</span>
+        <span class="post-date">{fmtDate(p.date)}</span>
         <p class="post-summary">{p.summary}</p>
       </li>
     ))}

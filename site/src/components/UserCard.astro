@@ -6,7 +6,11 @@ interface Props { menuItems: MenuItem[]; }
 const { menuItems } = Astro.props;
 ---
 <div class="card user">
-  <div class="avatar">{profile.avatarText}</div>
+  {
+    profile.avatarImage
+      ? <img class="avatar img" src={profile.avatarImage} alt={profile.name} />
+      : <div class="avatar text">{profile.avatarText}</div>
+  }
   <div class="name hand">{profile.name}</div>
   <div class="tag">{profile.tagline}</div>
   <nav class="menu">
@@ -14,14 +18,49 @@ const { menuItems } = Astro.props;
   </nav>
 </div>
 
+<script>
+  // 滚动高亮：观察各区块，当前可视区块对应的菜单项加 .active
+  const menuLinks = Array.from(document.querySelectorAll('[data-menu]')) as HTMLElement[];
+  const sections = menuLinks
+    .map(a => a.dataset.menu)
+    .map(key => key && document.getElementById(key))
+    .filter((el): el is HTMLElement => !!el);
+
+  if ('IntersectionObserver' in window && sections.length && menuLinks.length) {
+    const setActive = (key: string) => {
+      menuLinks.forEach(a => a.classList.toggle('active', a.dataset.menu === key));
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // 取最靠上的可视区块
+        const visible = entries.filter(e => e.isIntersecting);
+        if (visible.length) {
+          // 选离视口顶部最近的
+          visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          setActive(visible[0].target.id);
+        }
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+    );
+    sections.forEach(s => observer.observe(s));
+  }
+</script>
+
 <style>
   .user { text-align: center; }
   .avatar {
     width: 64px; height: 64px; border-radius: 50%;
+    margin: 0 auto 10px;
+    object-fit: cover;
+  }
+  .avatar.text {
     background: var(--color-brand); color: #fff;
     display: flex; align-items: center; justify-content: center;
     font-family: var(--font-hand); font-size: 2rem;
-    margin: 0 auto 10px;
+  }
+  .avatar.img {
+    border: 2px solid var(--color-border);
+    box-shadow: var(--shadow-card);
   }
   .name { font-size: 1.7rem; margin-bottom: 4px; }
   .tag { font-size: 0.85rem; color: var(--color-secondary); line-height: 1.4; margin-bottom: 16px; }
@@ -31,4 +70,9 @@ const { menuItems } = Astro.props;
     color: var(--color-primary); text-align: left;
   }
   .menu a:hover { background: rgba(53,191,171,.12); text-decoration: none; }
+  .menu a.active {
+    background: rgba(53,191,171,.15);
+    color: var(--color-brand);
+    font-weight: 600;
+  }
 </style>

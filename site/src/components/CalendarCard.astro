@@ -1,9 +1,10 @@
 ---
 // 日历卡：当月日历，今日高亮
+// 高亮逻辑：客户端 JS 取浏览器本地日期，d === 今天 时加 .today 类
 ---
 <div class="card cal">
   <div class="cal-head" id="cal-title">----</div>
-  <div class="cal-grid">
+  <div class="cal-grid cal-dow-row">
     {['一','二','三','四','五','六','日'].map(d => <span class="cal-dow">{d}</span>)}
   </div>
   <div class="cal-grid" id="cal-body"></div>
@@ -23,6 +24,7 @@
     let html = '';
     for (let i = 0; i < offset; i++) html += '<span class="cal-empty"></span>';
     for (let d = 1; d <= daysInMonth; d++) {
+      // 今日：加 .today 类，高亮背景 + 加粗
       html += `<span class="cal-day${d === today ? ' today' : ''}">${d}</span>`;
     }
     body.innerHTML = html;
@@ -34,7 +36,20 @@
   .cal-head { font-weight: 600; margin-bottom: 10px; color: var(--color-primary); }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .cal-dow { font-size: 0.75rem; color: var(--color-secondary); padding: 2px 0; }
-  .cal-day { font-size: 0.85rem; padding: 5px 0; border-radius: 6px; }
-  .cal-day.today { background: var(--color-brand); color: #fff; font-weight: 700; }
+  .cal-dow-row { margin-bottom: 4px; }
+  /* 普通日期格子 */
+  .cal-day {
+    font-size: 0.85rem; padding: 5px 0; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    aspect-ratio: 1 / 1; max-height: 30px; margin: 0 auto;
+  }
+  /* 今天：品牌色圆形高亮 + 白字 + 外圈光晕 */
+  .cal-day.today {
+    background: var(--color-brand);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 3px rgba(53, 191, 171, 0.25);
+    border-radius: 50%;
+  }
   .cal-empty { padding: 5px 0; }
 </style>

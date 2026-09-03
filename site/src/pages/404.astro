@@ -1,0 +1,27 @@
+---
+// 404 页面：保持门户视觉风格，引导回首页
+import Layout from '../layouts/Dashboard.astro';
+---
+<Layout title="404 — Page Not Found">
+  <div class="card nf">
+    <h1 class="hand nf-code">404</h1>
+    <p class="nf-msg">好像走丢了……这里什么都没有。</p>
+    <div class="nf-links">
+      <a class="btn" href="/">回首页名片</a>
+      <a class="btn" href="/home">进 /home 门户</a>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .nf { text-align: center; max-width: 480px; margin: 10vh auto 0; padding: 44px 30px; }
+  .nf-code { font-size: 4.5rem; color: var(--color-brand); margin-bottom: 6px; }
+  .nf-msg { color: var(--color-secondary); font-size: 1.05rem; margin-bottom: 22px; }
+  .nf-links { display: flex; gap: 14px; justify-content: center; }
+  .btn {
+    display: inline-block; padding: 9px 22px; border-radius: 999px;
+    border: 2px solid var(--color-brand); color: var(--color-brand);
+    transition: all .2s;
+  }
+  .btn:hover { background: var(--color-brand); color: #fff; text-decoration: none; }
+</style>
