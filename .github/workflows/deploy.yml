@@ -2,6 +2,7 @@
 # GitHub Actions —— 自动构建并部署到 GitHub Pages
 # 触发：push 到 main 分支（或手动 workflow_dispatch）
 # 效果：改 site/src 后只需 git push，服务器自动 npm run build 并发布
+# 结构：build job（构建产物）→ deploy job（发布到 Pages，需 github-pages 环境）
 # ============================================================
 name: Deploy to GitHub Pages
 
@@ -10,7 +11,7 @@ on:
     branches: [main]
   workflow_dispatch:   # 允许在 Actions 页面手动触发
 
-# 给 GITHUB_TOKEN 授权：可读代码、可写 Pages
+# 给 GITHUB_TOKEN 授权：可读代码、可写 Pages、OIDC
 permissions:
   contents: read
   pages: write
@@ -22,6 +23,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Job 1：在 site/ 下安装依赖并构建 Astro
   build:
     runs-on: ubuntu-latest
     defaults:
@@ -44,15 +46,20 @@ jobs:
       - name: Build (Astro)
         run: npm run build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # 把 site/dist 构建产物作为 Pages 内容上传
           path: site/dist
 
+  # Job 2：把 artifact 部署到 GitHub Pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
