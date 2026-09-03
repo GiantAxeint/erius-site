@@ -1,5 +1,10 @@
-/* erius-site /home dashboard 全局样式
-   主题令牌：沿用 lvy010 调研配色，微调成 Erius 青绿系 */
+/* erius-site 全局样式
+   主题令牌：沿用 lvy010 调研配色，微调成 Erius 青绿系
+   字体体系（改版0）：全站 UI 统一手写体
+   - Caveat      英文手写（标题强调）
+   - ZCOOL KuaiLe 中文手写（中文 fallback，保证中英文观感统一）
+   - Kalam       正文手写（短文本）
+   - 阅读字体     常规系统字体，仅用于 Markdown 长文正文 */
 :root {
   /* 颜色令牌 */
   --color-brand: #35bfab;
@@ -16,9 +21,10 @@
   --radius-md: 12px;
   --shadow-card: 0 4px 20px rgba(51, 79, 82, 0.08);
 
-  /* 字体 */
-  --font-hand: 'Caveat', cursive;
-  --font-body: 'Kalam', system-ui, -apple-system, sans-serif;
+  /* 字体体系 */
+  --font-hand: 'Caveat', 'ZCOOL KuaiLe', 'Kalam', cursive;   /* 标题/强调：英文 Caveat，中文站酷手写 */
+  --font-body: 'Kalam', 'ZCOOL KuaiLe', system-ui, sans-serif; /* 界面短文本手写 */
+  --font-reading: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; /* Markdown 长文正文 */
 }
 
 * {
@@ -28,6 +34,7 @@
 }
 
 html {
+  /* 默认即手写体：除 Markdown 正文外全站一致 */
   font-family: var(--font-body);
   color: var(--color-primary);
 }
@@ -52,8 +59,15 @@ body {
   padding: 20px 22px;
 }
 
-/* 手写标题 */
+/* 手写标题（大号强调） */
 .hand {
+  font-family: var(--font-hand);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* 页面大标题统一手写（h1/h2） */
+h1, h2, h3 {
   font-family: var(--font-hand);
   font-weight: 600;
   color: var(--color-primary);

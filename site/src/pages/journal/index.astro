@@ -1,0 +1,72 @@
+---
+// /journal — 随笔日记列表页（每行 3 卡网格）
+// 数据源：src/content/journal/*.md（Markdown 驱动）
+// 用途：读书日记 / 生活随想
+import Layout from '../../layouts/Dashboard.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('journal'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+---
+<Layout title="随笔日记 — Erius">
+  <div class="page-head">
+    <h1 class="hand">随笔日记</h1>
+    <p class="sub">读书日记 · 生活随想 · 碎碎念</p>
+  </div>
+  <div class="grid3">
+    {posts.map(p => (
+      <a class="card post-card" href={`/journal/${p.id}`}>
+        <span class="pc-date">{fmtDate(p.data.date)}</span>
+        <span class="pc-title">{p.data.title}</span>
+        <p class="pc-summary">{p.data.summary}</p>
+        {p.data.tags && p.data.tags.length > 0 && (
+          <span class="pc-tags">
+            {p.data.tags.slice(0, 3).map(t => <span class="tag">{t}</span>)}
+          </span>
+        )}
+        <span class="pc-more">阅读全文 →</span>
+      </a>
+    ))}
+  </div>
+  {posts.length === 0 && <div class="card empty">还没有内容，第一篇随笔等你来写。</div>}
+</Layout>
+
+<style>
+  .page-head { max-width: 1080px; margin: 0 auto 24px; }
+  .page-head h1 { font-size: 2.6rem; color: var(--color-primary); }
+  .page-head .sub { color: var(--color-secondary); margin-top: 6px; font-family: var(--font-body); }
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  @media (max-width: 900px) { .grid3 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .grid3 { grid-template-columns: 1fr; } }
+  .post-card {
+    display: flex; flex-direction: column;
+    min-height: 220px;
+    text-decoration: none; color: var(--color-primary);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .post-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(51, 79, 82, 0.14);
+    text-decoration: none;
+  }
+  .pc-date { font-size: 0.8rem; color: var(--color-secondary); margin-bottom: 8px; font-family: var(--font-body); }
+  .pc-title { font-size: 1.2rem; font-weight: 600; line-height: 1.4; margin-bottom: 10px; }
+  .pc-summary { font-size: 0.9rem; color: var(--color-secondary); line-height: 1.65; flex: 1; font-family: var(--font-body); }
+  .pc-tags { display: flex; gap: 5px; margin-top: 12px; }
+  .tag {
+    font-size: 0.7rem; padding: 2px 8px; border-radius: 999px;
+    background: rgba(53,191,171,.12); color: var(--color-brand);
+  }
+  .pc-more { margin-top: 14px; font-size: 0.85rem; color: var(--color-brand); font-family: var(--font-body); }
+  .empty { text-align: center; color: var(--color-secondary); max-width: 1080px; margin: 0 auto; }
+</style>

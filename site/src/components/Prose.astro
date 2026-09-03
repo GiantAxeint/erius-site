@@ -1,0 +1,65 @@
+---
+// Markdown 正文排版组件：包裹 <Content/>，提供统一阅读排版
+// 正文用常规系统字体保证长文可读性；标题保持手写体风格
+// 复用：tinkering/journal 两个详情页都用它
+---
+<div class="prose-card card">
+  <slot />
+</div>
+
+<style>
+  .prose-card {
+    padding: 28px 30px;
+    /* 正文：常规字体，保证长文阅读舒适 */
+    font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-size: 1rem;
+    color: #2c3a3d;
+    line-height: 1.9;
+    max-width: 760px;
+  }
+  /* 标题：保留手写体（仅标题回归 .hand 风格） */
+  .prose-card :global(h1),
+  .prose-card :global(h2),
+  .prose-card :global(h3),
+  .prose-card :global(h4) {
+    font-family: var(--font-hand);
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+  .prose-card :global(h1) { font-size: 1.8rem; margin: 1.2em 0 0.5em; }
+  .prose-card :global(h2) { font-size: 1.4rem; margin: 1.1em 0 0.45em; }
+  .prose-card :global(h3) { font-size: 1.2rem; margin: 1em 0 0.4em; }
+  .prose-card :global(h1:first-child),
+  .prose-card :global(h2:first-child) { margin-top: 0; }
+  .prose-card :global(p) { margin: 0.7em 0; }
+  .prose-card :global(ul),
+  .prose-card :global(ol) { margin: 0.7em 0; padding-left: 1.6em; }
+  .prose-card :global(li) { margin: 0.3em 0; }
+  .prose-card :global(code) {
+    background: rgba(53,191,171,.12); color: #0f6e56;
+    padding: 2px 6px; border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.88em;
+  }
+  .prose-card :global(pre) {
+    background: #223033; color: #e8f8f5; padding: 16px 18px;
+    border-radius: 12px; overflow-x: auto; margin: 1em 0;
+    font-size: 0.9rem; line-height: 1.6;
+  }
+  .prose-card :global(pre code) { background: none; color: inherit; padding: 0; }
+  .prose-card :global(blockquote) {
+    border-left: 3px solid var(--color-brand);
+    padding: 2px 0 2px 16px; color: var(--color-secondary);
+    margin: 1em 0; font-style: normal;
+  }
+  .prose-card :global(strong) { font-weight: 700; color: var(--color-primary); }
+  .prose-card :global(a) { color: var(--color-brand); }
+  .prose-card :global(hr) { border: none; border-top: 1px solid var(--color-border); margin: 1.6em 0; }
+  .prose-card :global(img) { max-width: 100%; border-radius: 10px; }
+  .prose-card :global(table) { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.92rem; }
+  .prose-card :global(th),
+  .prose-card :global(td) { border: 1px solid var(--color-border); padding: 8px 12px; text-align: left; }
+  @media (max-width: 600px) {
+    .prose-card { padding: 20px 16px; }
+  }
+</style>

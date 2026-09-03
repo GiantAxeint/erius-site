@@ -1,21 +1,19 @@
 // ============================================================
-// erius-site /home 数据契约 —— 唯一"内容配置文件"
+// erius-site /home 数据契约 —— 站点配置文件
 // ============================================================
-// ⭐ 想改主页内容？只需要编辑本文件，改完保存后：
-//    cd site && npm run build
-//    复制 dist 产物到仓库根 → git commit → git push
-//    （或告诉我，我一条命令帮你重建发布）
+// ⭐ 改内容流程（GitHub Actions 已配好自动部署）：
+//    编辑本文件或写 Markdown → git push → 等 ~1 分钟自动生效
 // ============================================================
 // 【如何自定义】
-//  1. 名字/签名/一句话  → profile 对象（下面第 36 行起）
-//  2. 头像图片          → 把图片放到 site/public/avatar.png，
-//                        然后把下方 avatarImage 改成 '/avatar.png'
+//  1. 名字/签名/一句话  → profile 对象
+//  2. 头像图片          → 放 site/public/avatar.png，avatarImage 填 '/avatar.png'
 //                        （不填则显示 avatarText 首字母）
 //  3. "About Me" 段落  → aboutContent.paragraphs 数组，每项一段
-//  4. 侧边菜单          → menuItems 数组
+//  4. 菜单              → menuItems 数组
 //  5. 社交链接          → socialLinks 数组
-//  6. 最新文章          → latestPosts 数组
-//  7. 项目展示          → projects 数组
+//  6. 折腾日记文章      → 新建 src/content/tinkering/xxx.md（不用改本文件）
+//  7. 随笔日记文章      → 新建 src/content/journal/xxx.md（不用改本文件）
+//  8. 项目展示          → projects 数组
 // ============================================================
 
 export interface SocialLink {
@@ -35,13 +33,6 @@ export interface Profile {
 export interface MenuItem {
   key: string;
   label: string;
-  href: string;
-}
-
-export interface PostItem {
-  title: string;
-  date: string;
-  summary: string;
   href: string;
 }
 
@@ -71,9 +62,11 @@ export const aboutContent = {
   ],
 };
 
-// ---------- 3. 侧边菜单（一般不用改） ----------
+// ---------- 3. 侧边/顶栏菜单（改这里） ----------
+// 折腾日记 = 学习 AI 遇到的问题；随笔日记 = 读书/生活随想
 export const menuItems: MenuItem[] = [
-  { key: 'posts', label: '近期文章', href: '/posts' },
+  { key: 'tinkering', label: '折腾日记', href: '/tinkering' },
+  { key: 'journal', label: '随笔日记', href: '/journal' },
   { key: 'projects', label: '我的项目', href: '/projects' },
   { key: 'about', label: '关于我', href: '/about' },
 ];
@@ -85,15 +78,10 @@ export const socialLinks: SocialLink[] = [
   { label: 'Home', url: '/', icon: '⌂' },
 ];
 
-// ---------- 5. 最新文章（改这里，href 留 '#' 表示暂未发布） ----------
-export const latestPosts: PostItem[] = [
-  {
-    title: 'Hello World: Erius 的个人站开张了',
-    date: '2026-09-04',
-    summary: '用 Astro 搭的多卡片个人门户，先跑通结构，内容慢慢填。',
-    href: '#',
-  },
-];
+// ---------- 5. 文章已改为 Markdown 驱动 ----------
+// 折腾日记 → src/content/tinkering/*.md（/tinkering）
+// 随笔日记 → src/content/journal/*.md（/journal）
+// 写文章 = 在对应目录新建 .md 文件，无需改此文件
 
 // ---------- 6. 项目展示（改这里） ----------
 export const projects: ProjectItem[] = [

@@ -1,16 +1,28 @@
 ---
-// /home — Erius 门户 dashboard（菜单项已指向独立页 /posts /projects /about）
-// 本页保留问候 + 精选概览卡片；完整列表在独立页面
+// /home — Erius 门户 dashboard
+// 问候 + 最新折腾/随笔预览 + 项目；完整列表在独立页
 import Layout from '../layouts/Dashboard.astro';
 import UserCard from '../components/UserCard.astro';
 import GreetingCard from '../components/GreetingCard.astro';
 import AboutCard from '../components/AboutCard.astro';
 import ClockCard from '../components/ClockCard.astro';
 import CalendarCard from '../components/CalendarCard.astro';
-import PostsCard from '../components/PostsCard.astro';
 import ProjectsCard from '../components/ProjectsCard.astro';
 import SocialCard from '../components/SocialCard.astro';
-import { profile, menuItems, latestPosts, projects, socialLinks } from '../data/profile';
+import { getCollection } from 'astro:content';
+import { profile, menuItems, projects, socialLinks } from '../data/profile';
+
+// 最新折腾日记 + 随笔（各取最新 2 篇预览）
+const [tinkering, journal] = await Promise.all([
+  getCollection('tinkering'),
+  getCollection('journal'),
+]);
+const latestTinkering = tinkering.sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 2);
+const latestJournal = journal.sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 2);
+
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
 ---
 <Layout title={`/home — ${profile.name}`}>
   <div class="dash">
@@ -21,7 +33,40 @@ import { profile, menuItems, latestPosts, projects, socialLinks } from '../data/
     <main class="center">
       <GreetingCard name={profile.name} intro={profile.intro} />
       <AboutCard />
-      <PostsCard posts={latestPosts} />
+      <!-- 折腾日记最新 -->
+      <section class="card feed">
+        <div class="feed-head">
+          <h3 class="card-title hand">折腾日记</h3>
+          <a class="feed-more" href="/tinkering">全部 →</a>
+        </div>
+        {latestTinkering.length > 0 ? (
+          <ul class="feed-list">
+            {latestTinkering.map(p => (
+              <li class="feed-item">
+                <a class="feed-title" href={`/tinkering/${p.id}`}>{p.data.title}</a>
+                <span class="feed-date">{fmtDate(p.data.date)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : <p class="feed-empty">还没有折腾日记</p>}
+      </section>
+      <!-- 随笔日记最新 -->
+      <section class="card feed">
+        <div class="feed-head">
+          <h3 class="card-title hand">随笔日记</h3>
+          <a class="feed-more" href="/journal">全部 →</a>
+        </div>
+        {latestJournal.length > 0 ? (
+          <ul class="feed-list">
+            {latestJournal.map(p => (
+              <li class="feed-item">
+                <a class="feed-title" href={`/journal/${p.id}`}>{p.data.title}</a>
+                <span class="feed-date">{fmtDate(p.data.date)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : <p class="feed-empty">还没有随笔日记</p>}
+      </section>
       <ProjectsCard items={projects} />
     </main>
     <aside class="right">
@@ -49,4 +94,13 @@ import { profile, menuItems, latestPosts, projects, socialLinks } from '../data/
     .center { grid-area: center; display: flex; flex-direction: column; gap: 18px; }
     .right { grid-area: right; display: flex; flex-direction: column; gap: 18px; }
   }
+  .feed-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .card-title { font-size: 1.3rem; color: var(--color-primary); }
+  .feed-more { font-size: 0.85rem; color: var(--color-brand); }
+  .feed-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .feed-item { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .feed-title { color: var(--color-primary); font-size: 0.98rem; }
+  .feed-title:hover { color: var(--color-brand); }
+  .feed-date { font-size: 0.78rem; color: var(--color-secondary); white-space: nowrap; font-family: var(--font-body); }
+  .feed-empty { color: var(--color-secondary); font-size: 0.9rem; }
 </style>
