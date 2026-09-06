@@ -1,7 +1,7 @@
 ---
-// /home — Erius 门户 dashboard（v5：v3b 基线 + 最新 6 条微调）
-// 视觉中心：问候大卡"6"（面积 +35% 后仍居中）
-// 围绕：LatestPosts(7 在 6 左下对角) + ContactBar 胶囊条(左下贴 6) + Clock/Calendar(右列错峰) + Music 横长条(6 斜右下对角)
+// /home — Erius 门户 dashboard（v4：以问候大卡"6"为枢纽的向心式布局）
+// 视觉中心：问候大卡（更大、更方正、略偏左下，朝"最新文章"左下对角呼应）
+// 围绕：社交胶囊(下方更近) + 时钟(右上对角，不与日历对齐) + 日历(顶对齐 6 中心) + 音乐(斜右下对角) + 左列 User/最新文章
 import Layout from '../layouts/Dashboard.astro';
 import UserCard from '../components/UserCard.astro';
 import ContactBar from '../components/ContactBar.astro';
@@ -28,11 +28,11 @@ import { profile, menuItems, socialLinks } from '../data/profile';
       <div class="bubble cell left-mid" style="--i:3">
         <LatestPostsCard />
       </div>
-      <div class="bubble cell center-foot" style="--i:4">
-        <ContactBar links={socialLinks} />
-      </div>
-      <div class="bubble cell right-mid" style="--i:5">
+      <div class="bubble cell right-mid" style="--i:4">
         <CalendarCard />
+      </div>
+      <div class="bubble cell center-foot" style="--i:5">
+        <ContactBar links={socialLinks} />
       </div>
       <div class="bubble cell right-foot" style="--i:6">
         <MusicPlayerCard />
@@ -54,38 +54,32 @@ import { profile, menuItems, socialLinks } from '../data/profile';
       "right";
     gap: 18px;
   }
-  /* 桌面：以问候卡"6"为视觉锚点，所有周边卡做"以 6 为中心的散乱布局"
-     时钟距 6 过远 → 向左平移 6px；
-     时钟与日历左右边界错开（不同 margin-left）→ 错峰；
-     日历宽高 +25%（在 CalendarCard.astro 内做）+ 向左平移 3px；
-     LatestPosts（7）在 6 的左下对角方向 + 距离不远 → 左下偏移靠近 6；
-     Music 横长条移至 6 的斜右下对角 + 更靠近；
-     ContactBar 胶囊条向左下挪 + 紧贴 6 底沿。 */
+  /* 桌面：以问候卡"6"为枢纽的向心式布局
+     - 左列稍窄、给中央问候卡留出大空间
+     - 右列用 3 个 cell 高度错位，让 Clock/Calendar/Music 分别在 6 的右上/中右/右下
+     - 时钟与日历在不同 grid 行 + 不同左偏移，故意错开避免垂直对齐 */
   @media (min-width: 960px) {
     .dash {
-      grid-template-columns: minmax(200px, 230px) minmax(400px, 500px) minmax(200px, 230px);
+      grid-template-columns: minmax(190px, 220px) minmax(400px, 440px) minmax(190px, 220px);
       grid-template-areas:
         "left-top    main     right-top"
         "left-mid    main     right-mid"
         "left-foot   foot     right-foot";
       align-items: start;
-      column-gap: 22px;
-      row-gap: 22px;
+      column-gap: 14px;
+      row-gap: 14px;
     }
-    /* 左列：UserCard 与 6 顶对齐；LatestPosts(7) 在 6 的左下对角方向 + 距离不远 */
+    /* 左列（UserCard/LatestPosts）：与问候卡顶对齐，左列中段卡略下错落 */
     .left-top    { margin-top: 0; }
-    .left-mid    { margin-top: 36px; }
-    /* 中央列底部：ContactBar 胶囊条向左下挪 + 上移贴 6 底沿 */
-    .center-foot { margin-top: -40px; margin-left: -16px; }
-    /* 右列：时钟向左 6px、日历向左 3px，左右边界错开不垂直对齐 */
-    .right-top   { margin-top: 28px; margin-left: 6px; }    /* 时钟：距 6 过远 → 向左 6px */
-    .right-mid   { margin-top: 32px; margin-left: -3px; }   /* 日历：向左 3px，与时钟左缘错峰 */
-    /* Music 横长条：移至 6 的斜右下对角 + 更靠近 */
-    .right-foot  { margin-top: 12px; margin-left: -10px; }
+    .left-mid    { margin-top: 28px; }
+    /* 右列：时钟贴 6 右上对角 + 不与日历对齐；日历顶对齐 6 中心 + 略左贴 6；音乐斜右下对角靠 */
+    .right-top   { margin-top: 6px;  margin-left: -10px; }  /* 时钟：贴 6 右上角 */
+    .right-mid   { margin-top: 0;    margin-left: -6px; }   /* 日历：顶对齐 6 中心，略左贴 6 */
+    .right-foot  { margin-top: 10px; margin-left: -4px; }   /* 音乐：向 6 斜右下靠 */
   }
 
-  .center-main { grid-area: main; align-self: center; justify-self: center; width: 100%; max-width: 500px; }
-  .center-foot { grid-area: foot; justify-self: flex-start; }
+  .center-main { grid-area: main; align-self: center; justify-self: center; width: 100%; max-width: 440px; /* 略向左下偏移，朝左列'最新文章'卡的左下对角呼应 */ margin-left: -10px; margin-top: 14px; }
+  .center-foot { grid-area: foot; justify-self: center; margin-top: -36px; }  /* 上移贴近问候卡 */
   .left-top    { grid-area: left-top; }
   .left-mid    { grid-area: left-mid; }
   .right-top   { grid-area: right-top; }
