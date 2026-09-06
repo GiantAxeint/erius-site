@@ -239,6 +239,7 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
       S.idx = i;
       var a = ensureAudio();
       a.src = S.songs[i].file;
+      rememberLast(S.songs[i].file);   // 预热：记住最近播放 → 下次进站先预热它
       var ui = S.ui;
       if (ui) {
         ui.nameEl.textContent = S.songs[i].name;
@@ -308,6 +309,37 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
       return b || '未知曲目';
     }
 
+    // ---------- 本地预热（建议4）：首屏后静默预取目标歌前 1MB → 起播/切歌少等待 ----------
+    // 背景：GitHub Pages 国内 ~0.13MB/s，3MB 的歌切过去要等 10~25s 才出声。
+    // 做法：页面空闲后 fetch Range 前 1MB 填充浏览器 HTTP 缓存；mp3/m4a 元数据都在
+    // 文件头，起播时先读已缓存段 → 立即出声，剩余边播边下。不点播放则零打扰。
+    function rememberLast(file) {
+      try { localStorage.setItem('erius-mp-last', file); } catch (e) {}
+    }
+    function lastPlayed() {
+      try { return localStorage.getItem('erius-mp-last') || ''; } catch (e) { return ''; }
+    }
+    function warmUp() {
+      try {
+        if (document.hidden) return;              // 后台标签不抢带宽
+        if (S.audio && S.audio.src) return;       // 已在播/已选歌 → 无需预热
+        var target = lastPlayed(), found = -1;
+        if (target) {
+          for (var i = 0; i < S.songs.length; i++) {
+            if (S.songs[i].file === target) { found = i; break; }
+          }
+        }
+        if (found < 0) found = 0;                 // 无播放记录 → 预热第一首
+        var file = S.songs[found] && S.songs[found].file;
+        if (!file) return;
+        setTimeout(function () {                 // 延迟到首屏渲染完再拉，避免竞争
+          fetch(file, { headers: { Range: 'bytes=0-1048575' }, signal: AbortSignal.timeout(60000) })
+            .then(function (r) { if (r.ok) return r.blob(); })  // 读完 1MB 即进 HTTP 缓存
+            .catch(function () { /* 预热失败静默忽略 */ });
+        }, 2000);
+      } catch (e) { /* ignore */ }
+    }
+
     // ---------- audio 全局事件：只绑一次（audio 跨页常驻，防累积） ----------
     if (!S.bound) {
       S.bound = true;
@@ -364,6 +396,9 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
 
       // 从常驻 audio 恢复 UI（切页/刷新后播放状态不丢）
       syncUIFromAudio();
+
+      // 本地预热：无播放记录时预取目标歌前 1MB，起播少等待
+      warmUp();
 
       if (isFloat) {
         var grip = root.querySelector('[data-role="grip"]');
