@@ -1,0 +1,58 @@
+---
+// 最新文章（仅最新 1 篇，紧凑型 —— 卡片卡片样式与左侧 Contact 风格一致）
+// 取 tinkering + journal 两个 collection 里 date 最近的一篇
+import { getCollection } from 'astro:content';
+const [tinkering, journal] = await Promise.all([
+  getCollection('tinkering'),
+  getCollection('journal'),
+]);
+const all = [...tinkering.map(p => ({ ...p, collection: 'tinkering' })), ...journal.map(p => ({ ...p, collection: 'journal' }))];
+const latest = all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime())[0];
+function fmt(d: Date) {
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+---
+{latest && (
+  <article class="card latest">
+    <h3 class="card-title hand">最新文章</h3>
+    <a class="post" href={`/${latest.collection}/${latest.id}`}>
+      <span class={`kind kind-${latest.collection}`}>
+        {latest.collection === 'tinkering' ? '折腾' : '随笔'}
+      </span>
+      <span class="title">{latest.data.title}</span>
+      <span class="meta">{fmt(latest.data.date)}</span>
+    </a>
+    <a class="more" href={`/${latest.collection === 'tinkering' ? 'tinkering' : 'journal'}`}>查看全部 →</a>
+  </article>
+)}
+<style>
+  .card.latest { padding: 14px 16px; }
+  .card-title { font-size: 1.2rem; margin-bottom: 12px; color: var(--color-primary); font-family: var(--font-hand); }
+  .post {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 12px 14px; border-radius: 12px;
+    background: rgba(255,255,255,.55);
+    transition: background .18s, transform .18s;
+    color: inherit; text-decoration: none;
+    border: 1px solid rgba(53,191,171,.18);
+  }
+  .post:hover { background: rgba(53,191,171,.12); text-decoration: none; transform: translateY(-1px); }
+  .kind {
+    font-size: 0.7rem; padding: 2px 9px; border-radius: 999px; align-self: flex-start;
+    background: rgba(53,191,171,.18); color: var(--color-brand);
+    font-family: var(--font-body);
+  }
+  .kind-journal { background: rgba(31,201,231,.18); color: #1fc9e7; }
+  .title {
+    font-size: 1rem; color: var(--color-primary); font-weight: 600;
+    line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .meta { font-size: 0.78rem; color: var(--color-secondary); font-family: var(--font-body); }
+  .more {
+    display: inline-block; margin-top: 10px; font-size: 0.82rem;
+    color: var(--color-brand); text-decoration: none;
+  }
+  .more:hover { text-decoration: underline; }
+</style>

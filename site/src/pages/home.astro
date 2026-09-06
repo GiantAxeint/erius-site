@@ -1,77 +1,31 @@
 ---
 // /home — Erius 门户 dashboard
-// 问候 + 最新折腾/随笔预览 + 项目；完整列表在独立页
+// 卡片列表：左 UserCard/Social/LatestPosts；中 Greeting；右 Clock/Calendar/Music
+// 完整列表（项目/折腾/随笔）去独立页
 import Layout from '../layouts/Dashboard.astro';
 import UserCard from '../components/UserCard.astro';
 import GreetingCard from '../components/GreetingCard.astro';
-import AboutCard from '../components/AboutCard.astro';
 import ClockCard from '../components/ClockCard.astro';
 import CalendarCard from '../components/CalendarCard.astro';
-import ProjectsCard from '../components/ProjectsCard.astro';
 import SocialCard from '../components/SocialCard.astro';
-import { getCollection } from 'astro:content';
-import { profile, menuItems, projects, socialLinks } from '../data/profile';
-
-// 最新折腾日记 + 随笔（各取最新 2 篇预览）
-const [tinkering, journal] = await Promise.all([
-  getCollection('tinkering'),
-  getCollection('journal'),
-]);
-const latestTinkering = tinkering.sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 2);
-const latestJournal = journal.sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 2);
-
-function fmtDate(d: Date): string {
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
-}
+import LatestPostsCard from '../components/LatestPostsCard.astro';
+import MusicPlayerCard from '../components/MusicPlayerCard.astro';
+import { profile, menuItems, socialLinks } from '../data/profile';
 ---
 <Layout title="Erius!">
   <div class="dash">
     <aside class="left">
       <UserCard menuItems={menuItems} />
       <SocialCard links={socialLinks} />
+      <LatestPostsCard />
     </aside>
     <main class="center">
       <GreetingCard name={profile.name} intro={profile.intro} />
-      <AboutCard />
-      <!-- 折腾日记最新 -->
-      <section class="card feed">
-        <div class="feed-head">
-          <h3 class="card-title hand">折腾日记</h3>
-          <a class="feed-more" href="/tinkering">全部 →</a>
-        </div>
-        {latestTinkering.length > 0 ? (
-          <ul class="feed-list">
-            {latestTinkering.map(p => (
-              <li class="feed-item">
-                <a class="feed-title" href={`/tinkering/${p.id}`}>{p.data.title}</a>
-                <span class="feed-date">{fmtDate(p.data.date)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : <p class="feed-empty">还没有折腾日记</p>}
-      </section>
-      <!-- 随笔日记最新 -->
-      <section class="card feed">
-        <div class="feed-head">
-          <h3 class="card-title hand">随笔日记</h3>
-          <a class="feed-more" href="/journal">全部 →</a>
-        </div>
-        {latestJournal.length > 0 ? (
-          <ul class="feed-list">
-            {latestJournal.map(p => (
-              <li class="feed-item">
-                <a class="feed-title" href={`/journal/${p.id}`}>{p.data.title}</a>
-                <span class="feed-date">{fmtDate(p.data.date)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : <p class="feed-empty">还没有随笔日记</p>}
-      </section>
-      <ProjectsCard items={projects} />
     </main>
     <aside class="right">
       <ClockCard />
       <CalendarCard />
+      <MusicPlayerCard />
     </aside>
   </div>
 </Layout>
@@ -90,17 +44,57 @@ function fmtDate(d: Date): string {
       grid-template-areas: "left center right";
       align-items: start;
     }
-    .left { grid-area: left; display: flex; flex-direction: column; gap: 18px; }
+    .left  { grid-area: left;   display: flex; flex-direction: column; gap: 18px; }
     .center { grid-area: center; display: flex; flex-direction: column; gap: 18px; }
-    .right { grid-area: right; display: flex; flex-direction: column; gap: 18px; }
+    .right { grid-area: right;  display: flex; flex-direction: column; gap: 18px; }
   }
-  .feed-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
-  .card-title { font-size: 1.3rem; color: var(--color-primary); }
-  .feed-more { font-size: 0.85rem; color: var(--color-brand); }
-  .feed-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-  .feed-item { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .feed-title { color: var(--color-primary); font-size: 0.98rem; }
-  .feed-title:hover { color: var(--color-brand); }
-  .feed-date { font-size: 0.78rem; color: var(--color-secondary); white-space: nowrap; font-family: var(--font-body); }
-  .feed-empty { color: var(--color-secondary); font-size: 0.9rem; }
+  @media (max-width: 899px) {
+    .left, .center, .right { display: flex; flex-direction: column; gap: 18px; }
+  }
+
+  /* ============================================================
+     气泡入场动画 —— 仿 lvyovo-wiki.tech：
+     - 每张卡片从较小状态（0.55）放大到位（1），配合下沉→上浮，纵向+透明度同步收口
+     - 列到列、卡片到卡片，依次 staggered 入场
+     - 缓动用 overshoot（cubic-bezier 带回弹），更"气泡"感
+     - 仅在首次渲染时跑一次
+     ============================================================ */
+  @keyframes bubble-in {
+    0%   { transform: scale(.55) translateY(18px); opacity: 0; }
+    70%  { transform: scale(1.04) translateY(0);   opacity: 1; }
+    100% { transform: scale(1)   translateY(0);   opacity: 1; }
+  }
+  /* 各列容器本身轻微进入 */
+  .dash > .left,
+  .dash > .center,
+  .dash > .right {
+    animation: bubble-in .55s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .dash > .left   { animation-delay: .08s; }
+  .dash > .center { animation-delay: .16s; }
+  .dash > .right  { animation-delay: .24s; }
+
+  /* 各列内卡片 staggered 进入 —— 用 :nth-child 把第 n 张卡片按时间间隔推入 */
+  .dash > aside > *,
+  .dash > main  > * {
+    animation: bubble-in .6s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .dash > .left   > *:nth-child(1) { animation-delay: .18s; }
+  .dash > .left   > *:nth-child(2) { animation-delay: .30s; }
+  .dash > .left   > *:nth-child(3) { animation-delay: .42s; }
+
+  .dash > .center > *:nth-child(1) { animation-delay: .28s; }
+  .dash > .center > *:nth-child(2) { animation-delay: .40s; }
+
+  .dash > .right  > *:nth-child(1) { animation-delay: .34s; }
+  .dash > .right  > *:nth-child(2) { animation-delay: .46s; }
+  .dash > .right  > *:nth-child(3) { animation-delay: .58s; }
+
+  /* 尊重系统的"减少动画"偏好 */
+  @media (prefers-reduced-motion: reduce) {
+    .dash > .left, .dash > .center, .dash > .right,
+    .dash > aside > *, .dash > main > * {
+      animation: none;
+    }
+  }
 </style>

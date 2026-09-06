@@ -1,0 +1,181 @@
+---
+// 随机播放歌曲卡（横向长条：宽:高 = 3:1，由容器宽度反推高度）
+// 把 .mp3/.m4a/.ogg/.wav/.aac/.flac 放到 site/public/music/，build 时扫描列出
+// 功能：上一首 / 暂停-播放 / 下一首 + 实时进度条 + 当前歌曲名；不显示音量/计数/文案
+// 行为：单首结束后自动随机切下一首（同集合内随机不重复当前）
+import { readdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+const musicDir = join(process.cwd(), 'public', 'music');
+const exts = /\.(mp3|m4a|ogg|wav|aac|flac)$/i;
+const raw = existsSync(musicDir)
+  ? readdirSync(musicDir).filter(f => exts.test(f)).sort()
+  : [];
+const songs = raw.map(f => ({
+  file: `/music/${f}`,
+  name: f.replace(exts, ''),
+}));
+---
+<div class="card music">
+  {songs.length === 0 ? (
+    <p class="empty">把音频文件放进 <code>site/public/music/</code> 目录后重新部署。</p>
+  ) : (
+    <div class="player" data-songs={JSON.stringify(songs)}>
+      <span class="dot" aria-hidden="true"></span>
+      <span class="name" id="music-name">—</span>
+      <input
+        type="range"
+        id="music-seek"
+        class="seek"
+        min="0" max="1000" value="0" step="1"
+        title="播放进度"
+      />
+      <span class="time" id="music-time">0:00 / 0:00</span>
+      <div class="ctrl">
+        <button class="btn" id="music-prev" type="button" aria-label="上一首" title="上一首">⏮</button>
+        <button class="btn play" id="music-play" type="button" aria-label="播放或暂停" title="播放 / 暂停">▶</button>
+        <button class="btn" id="music-next" type="button" aria-label="下一首" title="下一首">⏭</button>
+      </div>
+      <audio id="music-audio" preload="none"></audio>
+    </div>
+  )}
+</div>
+
+<script>
+  // 仅在卡片存在时执行 —— 用户刷新页面时跑这套逻辑
+  const root = document.querySelector('.player') as HTMLElement | null;
+  if (root) {
+    const songs: { file: string; name: string }[] = JSON.parse(
+      root.dataset.songs || '[]'
+    );
+    const audio = document.getElementById('music-audio') as HTMLAudioElement;
+    const nameEl = document.getElementById('music-name') as HTMLElement;
+    const playBtn = document.getElementById('music-play') as HTMLButtonElement;
+    const prevBtn = document.getElementById('music-prev') as HTMLButtonElement;
+    const nextBtn = document.getElementById('music-next') as HTMLButtonElement;
+    const seek = document.getElementById('music-seek') as HTMLInputElement;
+    const timeEl = document.getElementById('music-time') as HTMLElement;
+
+    let idx = -1;
+    function fmt(s: number) {
+      if (!isFinite(s) || s < 0) return '0:00';
+      const m = Math.floor(s / 60);
+      const r = Math.floor(s % 60);
+      return `${m}:${String(r).padStart(2, '0')}`;
+    }
+    function pickRandom(): void {
+      if (songs.length === 0) return;
+      // 在剩余曲目里随机抽一首（避免与当前相同）
+      let i = idx;
+      if (songs.length === 1) i = 0;
+      else { while (i === idx) i = Math.floor(Math.random() * songs.length); }
+      idx = i;
+      audio.src = songs[i].file;
+      nameEl.textContent = songs[i].name;
+      audio.play().catch(() => { /* 浏览器自动播放拦截 → 等用户再点一次 */ });
+      playBtn.textContent = '⏸';
+    }
+    function pickPrev(): void {
+      if (songs.length === 0) return;
+      const i = idx <= 0 ? songs.length - 1 : idx - 1;
+      idx = i;
+      audio.src = songs[i].file;
+      nameEl.textContent = songs[i].name;
+      audio.play().catch(() => {});
+      playBtn.textContent = '⏸';
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (!audio.src) { pickRandom(); return; }
+      if (audio.paused) { audio.play(); playBtn.textContent = '⏸'; }
+      else { audio.pause(); playBtn.textContent = '▶'; }
+    });
+    prevBtn.addEventListener('click', pickPrev);
+    nextBtn.addEventListener('click', pickRandom);
+
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) { timeEl.textContent = '0:00 / 0:00'; seek.value = '0'; return; }
+      seek.value = String(Math.floor((audio.currentTime / audio.duration) * 1000));
+      timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+    });
+    seek.addEventListener('input', () => {
+      if (audio.duration) audio.currentTime = (Number(seek.value) / 1000) * audio.duration;
+    });
+    // 单曲结束 → 自动随机切下一首
+    audio.addEventListener('ended', () => pickRandom());
+  }
+</script>
+
+<style>
+  /* 横向 3:1：宽由父容器决定（占右列 100%），高 = 宽 / 3 */
+  .card.music {
+    padding: 10px 14px;
+    aspect-ratio: 3 / 1;
+    width: 100%;
+    overflow: hidden;
+    display: flex; align-items: center;
+  }
+  .empty {
+    color: var(--color-secondary); font-size: 0.78rem; line-height: 1.5;
+    text-align: center; width: 100%;
+  }
+  .empty code {
+    background: rgba(53,191,171,.14); color: var(--color-brand);
+    padding: 1px 5px; border-radius: 4px; font-size: 0.85em;
+  }
+  .player {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; min-width: 0;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--color-brand);
+    box-shadow: 0 0 0 4px rgba(53,191,171,.18);
+    flex: 0 0 auto;
+    animation: music-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes music-pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(53,191,171,.18); }
+    50%      { box-shadow: 0 0 0 8px rgba(53,191,171,0); }
+  }
+  .name {
+    font-weight: 600; color: var(--color-primary);
+    font-size: 0.82rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex: 0 1 auto; min-width: 0; max-width: 38%;
+    font-family: var(--font-body);
+  }
+  .seek {
+    flex: 1 1 auto; min-width: 0;
+    accent-color: var(--color-brand);
+    height: 4px;
+    cursor: pointer;
+  }
+  .time {
+    font-size: 0.72rem; color: var(--color-secondary);
+    white-space: nowrap; flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-body);
+  }
+  .ctrl { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  .btn {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid rgba(53,191,171,.35);
+    background: rgba(255,255,255,.6);
+    cursor: pointer; font-size: 0.7rem; color: var(--color-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0; line-height: 1;
+    transition: background .15s, transform .12s;
+  }
+  .btn:hover { background: rgba(53,191,171,.18); }
+  .btn:active { transform: scale(0.92); }
+  .btn.play {
+    background: var(--color-brand); color: #fff; border-color: var(--color-brand);
+    width: 30px; height: 30px; font-size: 0.78rem;
+  }
+  .btn.play:hover { background: var(--color-brand-secondary); border-color: var(--color-brand-secondary); }
+  @media (max-width: 700px) {
+    .card.music { aspect-ratio: 5 / 2; }
+    .name { max-width: 30%; }
+  }
+</style>
