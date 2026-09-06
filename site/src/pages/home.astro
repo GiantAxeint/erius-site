@@ -54,35 +54,38 @@ import { profile, menuItems, socialLinks } from '../data/profile';
       "right";
     gap: 18px;
   }
-  /* 桌面：问候居正中，左右两列等宽环绕 */
+  /* 桌面：问候占中心两列宽度，左右卡片错落为"有中心的散落" */
   @media (min-width: 960px) {
     .dash {
-      grid-template-columns: minmax(200px, 240px) minmax(360px, 1fr) minmax(200px, 240px);
+      /* 中心 2 列宽（问候+社交），左右两窄列环绕 */
+      grid-template-columns: minmax(180px, 220px) 1fr minmax(200px, 250px);
       grid-template-areas:
         "left-top    main     right-top"
         "left-mid    main     right-mid"
-        "left-foot   foot     right-foot";
-      align-items: stretch;
+        ".           foot     right-foot";
+      align-items: start;
       column-gap: 22px;
-      row-gap: 22px;
+      row-gap: 20px;
     }
-    /* 左列：与问候顶对齐；右列：中段往下偏移制造错落；底部边缘贴齐 */
-    .left-top    { margin-top: 0; }
-    .left-mid    { margin-top: 16px; }
-    .left-foot   { margin-top: 8px; }
-    .right-top   { margin-top: 32px; }
-    .right-mid   { margin-top: 36px; }
-    .right-foot  { margin-top: 18px; }
+    /* 让问候卡纵向居中，左右卡互相错开一点更自然（margin 不与动画 transform 冲突） */
+    .left-mid  { margin-top: 6px; }
+    .right-mid { margin-top: 26px; }
+    .right-foot { margin-top: 4px; }
   }
 
-  .center-main { grid-area: main; align-self: center; justify-self: center; width: 100%; max-width: 460px; }
+  .center-main { grid-area: main; }
   .center-foot { grid-area: foot; justify-self: center; }
   .left-top    { grid-area: left-top; }
   .left-mid    { grid-area: left-mid; }
-  .left-foot   { grid-area: left-foot; }
   .right-top   { grid-area: right-top; }
   .right-mid   { grid-area: right-mid; }
   .right-foot  { grid-area: right-foot; }
+
+  /* 问候卡纵向占满中心两格（left-mid 与 main 并排时保持较高视觉重心） */
+  @media (min-width: 960px) {
+    .center-main { display: flex; }
+    .center-main > * { width: 100%; }
+  }
 
   /* ===== 气泡入场动画（参考 lvy010） ===== */
   .bubble {
