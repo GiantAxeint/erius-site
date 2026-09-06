@@ -1,5 +1,5 @@
 ---
-// 社交图标格：无标题，各链接独立小格（图标悬停显示名字）
+// 社交图标胶囊条：横向、整体放大拉长，向左下挪贴近问候卡"6"
 import type { SocialLink } from '../data/profile';
 interface Props { links: SocialLink[]; }
 const { links } = Astro.props;
@@ -24,7 +24,7 @@ const items = links.filter(l => l.label !== 'Home');
         <svg class="c-svg" viewBox="0 0 24 24" aria-hidden="true">
           <path fill="#ffa116" d="M13.48 1.6 7.36 7.72a2 2 0 0 0 0 2.83l1.06 1.06a2 2 0 0 0 2.83 0l6.12-6.12a2 2 0 0 0 0-2.83L16.31 1.6a2 2 0 0 0-2.83 0z"/>
           <path fill="#1f2328" d="M3.81 9.18a2 2 0 0 0-2.83 2.83L7.1 18.13a4 4 0 0 0 5.66 0l4.24-4.24a2 2 0 0 0-2.83-2.83l-3.54 3.54-6.82-6.82z"/>
-          <path fill="#ffa116" d="M22.83 16.77a2 2 0 0 0-2.83-2.83l-3.54 3.54-2.12-2.12a2 2 0 0 0-2.83 2.83l3.54 3.54a4 4 0 0 0 5.66 0l2.12-2.12z"/>
+          <path fill="#ffa116" d="M22.83 16.77a2 2 0 0 0-2.83-2.83l-3.54 3.54-2.12-2.12a2 2 0 0 0 2.83 2.83l3.54 3.54a4 4 0 0 0 5.66 0l2.12-2.12z"/>
         </svg>
       )}
       <span class="c-label">{l.label}</span>
@@ -33,35 +33,33 @@ const items = links.filter(l => l.label !== 'Home');
 </div>
 
 <style>
-  /* 小格：圆角方块 + 品牌描边，悬停浮起变实 */
+  /* 胶囊形图标条：横向、整体放大拉长，向左下靠近 6（home.astro 用 margin 控制位置） */
   .social-chips {
-    display: flex; flex-wrap: wrap; gap: 10px;
-    justify-content: center;
+    display: flex; flex-wrap: wrap; gap: 12px;
+    justify-content: flex-start;
   }
   .chip {
     position: relative;
     display: inline-flex; align-items: center; justify-content: center;
-    /* 胶囊形：更宽更长，紧贴问候卡下沿 */
-    min-width: 64px; height: 36px; padding: 0 16px;
+    min-width: 76px; height: 40px; padding: 0 18px;
     border-radius: 999px;
-    background: rgba(255,255,255,.6);
-    border: 1px solid rgba(53,191,.25);
+    background: rgba(255,255,255,.62);
+    border: 1px solid rgba(53,191,171,.30);
     color: var(--color-primary);
-    box-shadow: 0 2px 10px rgba(51,79,82,.07);
+    box-shadow: 0 3px 12px rgba(51,79,82,.08);
     transition: transform .18s, background .18s, border-color .18s;
-    gap: 6px;
+    gap: 7px;
   }
   .chip:hover {
-    transform: translateY(-3px) scale(1.06);
+    transform: translateY(-3px) scale(1.05);
     background: rgba(53,191,171,.15);
     border-color: var(--color-brand);
     text-decoration: none;
   }
-  .c-char { font-size: 1.15rem; color: var(--color-brand); line-height: 1; }
-  .c-svg { width: 24px; height: 24px; }
-  /* 名字：默认与图标横向并排（胶囊形自带文字感），悬停时微调样式 */
+  .c-char { font-size: 1.3rem; color: var(--color-brand); line-height: 1; }
+  .c-svg { width: 26px; height: 26px; }
   .c-label {
-    font-size: 0.82rem; color: var(--color-primary);
+    font-size: 0.85rem; color: var(--color-primary);
     font-weight: 600; letter-spacing: .2px;
     transition: opacity .15s;
     white-space: nowrap;
