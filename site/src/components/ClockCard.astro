@@ -6,17 +6,26 @@
   <div class="date" id="clock-date"></div>
 </div>
 
-<script>
-  const tEl = document.getElementById('clock');
-  const dEl = document.getElementById('clock-date');
-  function pad(n: number) { return String(n).padStart(2, '0'); }
-  function tick() {
-    const now = new Date();
-    if (tEl) tEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    if (dEl) dEl.textContent = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+<script is:inline>
+  // View Transitions 下 Astro 默认只跑一次 hoisted script。
+  // 这里改用 astro:page-load 监听，每次导航（/home ↔ /about）都重新挂载。
+  function bootClock() {
+    const tEl = document.getElementById('clock');
+    const dEl = document.getElementById('clock-date');
+    if (!tEl || !dEl) return;
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function tick() {
+      const now = new Date();
+      if (tEl) tEl.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+      if (dEl) dEl.textContent = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    }
+    // 防 setInterval 泄漏：每次导航清掉旧的
+    if (window.__eriusClockTimer) clearInterval(window.__eriusClockTimer);
+    tick();
+    window.__eriusClockTimer = setInterval(tick, 1000);
   }
-  tick();
-  setInterval(tick, 1000);
+  bootClock();
+  document.addEventListener('astro:page-load', bootClock);
 </script>
 
 <style>

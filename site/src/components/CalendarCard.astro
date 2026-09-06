@@ -2,12 +2,10 @@
 // 日历卡：当月日历，今日高亮
 // 渲染策略：格子由 Astro 静态渲染（保证 data-astro-cid 作用域，CSS 生效）
 // JS 只负责：① 显示标题（带客户端时区判断）② 填数字 ③ 给"今天"加 .today 类
-// 这样每月跨月/首次访问都能正确高亮，无需重建
 const now = new Date();
 const y = now.getFullYear();
 const m = now.getMonth();
 const todayNum = now.getDate();
-// 当月第一天周几（周一=0…周日=6）
 const firstDay = new Date(y, m, 1).getDay();
 const offset = (firstDay + 6) % 7;
 const daysInMonth = new Date(y, m + 1, 0).getDate();
@@ -25,15 +23,20 @@ const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   </div>
 </div>
 
-<script>
-  // 在客户端按用户实际时区更新"今天"高亮（每月跨月时无需重新构建）
-  const now = new Date();
-  const today = now.getDate();
-  document.querySelectorAll<HTMLElement>('.cal-day').forEach((el) => {
-    const d = Number(el.dataset.d);
-    el.textContent = String(d);
-    if (d === today) el.classList.add('today');
-  });
+<script is:inline>
+  // View Transitions 下每次导航都要重新填日历数字 + 高亮今天
+  function bootCalendar() {
+    const cells = document.querySelectorAll('.cal-day');
+    if (!cells.length) return;
+    const today = new Date().getDate();
+    cells.forEach((el) => {
+      const d = Number(el.dataset.d);
+      el.textContent = String(d);
+      el.classList.toggle('today', d === today);
+    });
+  }
+  bootCalendar();
+  document.addEventListener('astro:page-load', bootCalendar);
 </script>
 
 <style>
@@ -47,7 +50,6 @@ const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     display: flex; align-items: center; justify-content: center;
     aspect-ratio: 1 / 1; max-height: 30px; margin: 0 auto;
   }
-  /* 今日：品牌色圆形高亮 + 白字 + 外圈光晕 */
   .cal-day.today {
     background: var(--color-brand);
     color: #fff;

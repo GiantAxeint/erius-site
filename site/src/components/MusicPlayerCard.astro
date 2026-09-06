@@ -176,17 +176,20 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
   .rz:hover { opacity: 1; }
 </style>
 
-<script>
+<script is:inline>
   // ============================================================
   // 全局播放逻辑 —— UI 每次导航重建，但 audio（#erius-audio）常驻，切页不断播
+  // View Transitions 下默认 hoisted script 只跑一次。
+  // 这里把整个初始化包成 bootPlayer()，每次 astro:page-load 都重跑一次。
   // ============================================================
-  const root = document.getElementById('mp-ui') as HTMLElement | null;
-  if (root) {
-    const isFloat = root.dataset.mode === 'float';
-    const songs: { file: string; name: string }[] = JSON.parse(root.dataset.songs || '[]');
+  function bootPlayer() {
+    const root = document.getElementById('mp-ui');
+    if (!root) return;  // 当前页没渲染播放器（如根名片 /）就直接退出
 
-    // 找到全局常驻 audio（Dashboard 注入）；找不到则兜底创建一个
-    let audio = document.getElementById('erius-audio') as HTMLAudioElement | null;
+    const isFloat = root.dataset.mode === 'float';
+    const songs = JSON.parse(root.dataset.songs || '[]');
+
+    let audio = document.getElementById('erius-audio');
     if (!audio) {
       audio = document.createElement('audio');
       audio.id = 'erius-audio';
@@ -194,47 +197,50 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
       document.body.appendChild(audio);
     }
 
-    const nameEl = root.querySelector('[data-role="name"]') as HTMLElement;
-    const timeEl = root.querySelector('[data-role="time"]') as HTMLElement;
-    const seekEl = root.querySelector('[data-role="seek"]') as HTMLInputElement;
-    const playBtn = root.querySelector('[data-role="play"]') as HTMLButtonElement;
-    const prevBtn = root.querySelector('[data-role="prev"]') as HTMLButtonElement;
-    const nextBtn = root.querySelector('[data-role="next"]') as HTMLButtonElement;
+    const nameEl  = root.querySelector('[data-role="name"]');
+    const timeEl  = root.querySelector('[data-role="time"]');
+    const seekEl  = root.querySelector('[data-role="seek"]');
+    const playBtn = root.querySelector('[data-role="play"]');
+    const prevBtn = root.querySelector('[data-role="prev"]');
+    const nextBtn = root.querySelector('[data-role="next"]');
 
     let idx = -1;
 
-    function nameOf(src: string): string {
-      const hit = songs.find(s => src.endsWith(s.file));
+    function nameOf(src) {
+      const hit = songs.find(function (s) { return src.endsWith(s.file); });
       if (hit) return hit.name;
       try {
-        const base = decodeURIComponent(src.split('/').pop() || '');
+        const base = decodeURIComponent((src.split('/').pop() || ''));
         return base.replace(/\.(mp3|m4a|ogg|wav|aac|flac)$/i, '');
-      } catch { return '未知曲目'; }
+      } catch (e) { return '未知曲目'; }
     }
-    function fmt(s: number) {
+    function fmt(s) {
       if (!isFinite(s) || s < 0) return '0:00';
       const m = Math.floor(s / 60);
       const r = Math.floor(s % 60);
-      return `${m}:${String(r).padStart(2, '0')}`;
+      return m + ':' + String(r).padStart(2, '0');
     }
     function syncFromAudio() {
-      // 换页/换实例后：从全局 audio 恢复显示状态（歌曲不中断时 UI 无缝跟上）
       if (audio.src) {
         nameEl.textContent = nameOf(audio.src);
-        idx = songs.findIndex(s => audio.src.endsWith(s.file));
+        idx = songs.findIndex(function (s) { return audio.src.endsWith(s.file); });
       }
       playBtn.textContent = audio.paused ? '▶' : '⏸';
-      if (audio.duration) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
         seekEl.value = String(Math.floor((audio.currentTime / audio.duration) * 1000));
-        timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+        timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
+      } else {
+        seekEl.value = '0';
+        timeEl.textContent = '0:00 / 0:00';
       }
     }
 
-    function playSrc(i: number) {
+    function playSrc(i) {
       idx = i;
       audio.src = songs[i].file;
       nameEl.textContent = songs[i].name;
-      audio.play().catch(() => { /* 自动播放拦截 → 等用户再点 ▶ */ });
+      seekEl.value = '0';
+      audio.play().catch(function () { /* 自动播放拦截 → 等用户再点 ▶ */ });
       playBtn.textContent = '⏸';
     }
     function pickRandom() {
@@ -250,7 +256,8 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
       playSrc(i);
     }
 
-    playBtn.addEventListener('click', () => {
+    // ---------- 控件绑定（每次 bootPlayer 都重绑） ----------
+    playBtn.addEventListener('click', function () {
       if (!audio.src) { pickRandom(); return; }
       if (audio.paused) { audio.play(); playBtn.textContent = '⏸'; }
       else { audio.pause(); playBtn.textContent = '▶'; }
@@ -258,75 +265,86 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
     prevBtn.addEventListener('click', pickPrev);
     nextBtn.addEventListener('click', pickRandom);
 
-    audio.addEventListener('timeupdate', () => {
-      if (!audio.duration) { timeEl.textContent = '0:00 / 0:00'; seekEl.value = '0'; return; }
+    audio.addEventListener('timeupdate', function () {
+      if (!isFinite(audio.duration) || audio.duration <= 0) {
+        timeEl.textContent = '0:00 / 0:00'; seekEl.value = '0'; return;
+      }
+      // 用户拖动 seek 时不要回写覆盖它
+      if (seekEl.dataset.dragging === '1') return;
       seekEl.value = String(Math.floor((audio.currentTime / audio.duration) * 1000));
-      timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+      timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
     });
-    audio.addEventListener('play', () => { playBtn.textContent = '⏸'; });
-    audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
+    audio.addEventListener('play',  function () { playBtn.textContent = '⏸'; });
+    audio.addEventListener('pause', function () { playBtn.textContent = '▶'; });
+    audio.addEventListener('loadedmetadata', syncFromAudio);
     audio.addEventListener('ended', pickRandom);
-    seekEl.addEventListener('input', () => {
-      if (audio.duration) audio.currentTime = (Number(seekEl.value) / 1000) * audio.duration;
+
+    // ★ seek 修复：input 前必须确认 duration 可用，否则切到 NaN 会卡死 audio
+    seekEl.addEventListener('pointerdown', function () { seekEl.dataset.dragging = '1'; });
+    seekEl.addEventListener('pointerup',   function () { seekEl.dataset.dragging = '0'; });
+    seekEl.addEventListener('input', function () {
+      if (!isFinite(audio.duration) || audio.duration <= 0) {
+        if (audio.src) { audio.load(); }
+        return;
+      }
+      audio.currentTime = (Number(seekEl.value) / 1000) * audio.duration;
     });
 
-    // 初次渲染时恢复跨页播放状态
     syncFromAudio();
 
-    // ---------------- float：拖拽移动 + 右下角手柄缩放（子页可用） ----------------
     if (isFloat) {
-      const grip = root.querySelector('[data-role="grip"]') as HTMLElement;
-      const rz = root.querySelector('[data-role="resize"]') as HTMLElement;
+      const grip = root.querySelector('[data-role="grip"]');
+      const rz = root.querySelector('[data-role="resize"]');
 
-      // 记忆上次位置/尺寸（同会话内切页不跳回默认角）
-      const saved = (() => {
-        try { return JSON.parse(localStorage.getItem('erius-mp-pos') || 'null'); } catch { return null; }
+      const saved = (function () {
+        try { return JSON.parse(localStorage.getItem('erius-mp-pos') || 'null'); } catch (e) { return null; }
       })();
       if (saved) {
         root.style.left = saved.left + 'px';
-        root.style.top = saved.top + 'px';
-        root.style.width = saved.w + 'px';
+        root.style.top  = saved.top  + 'px';
+        root.style.width = saved.w   + 'px';
       }
-
       function savePos() {
         try {
           localStorage.setItem('erius-mp-pos', JSON.stringify({
             left: root.offsetLeft, top: root.offsetTop, w: root.offsetWidth,
           }));
-        } catch { /* ignore */ }
+        } catch (e) { /* ignore */ }
       }
 
-      // 拖拽（grip）与缩放（rz 手柄）
-      let act: 'drag' | 'resize' | null = null;
+      let act = null;
       let sx = 0, sy = 0, ow = 0, ox = 0, oy = 0;
-      const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+      const clamp = function (v, min, max) { return Math.min(max, Math.max(min, v)); };
 
-      grip.addEventListener('pointerdown', (e: PointerEvent) => {
+      grip.addEventListener('pointerdown', function (e) {
         e.preventDefault();
         act = 'drag';
         sx = e.clientX; sy = e.clientY;
         ox = root.offsetLeft; oy = root.offsetTop;
         root.setPointerCapture(e.pointerId);
       });
-      rz.addEventListener('pointerdown', (e: PointerEvent) => {
+      rz.addEventListener('pointerdown', function (e) {
         e.preventDefault(); e.stopPropagation();
         act = 'resize';
         sx = e.clientX; sy = e.clientY;
         ow = root.offsetWidth;
         root.setPointerCapture(e.pointerId);
       });
-      window.addEventListener('pointermove', (e: PointerEvent) => {
+      window.addEventListener('pointermove', function (e) {
         if (act === 'drag') {
           root.style.left = clamp(ox + e.clientX - sx, -root.offsetWidth + 60, innerWidth - 40) + 'px';
-          root.style.top = clamp(oy + e.clientY - sy, 8, innerHeight - 40) + 'px';
+          root.style.top  = clamp(oy + e.clientY - sy, 8, innerHeight - 40) + 'px';
         } else if (act === 'resize') {
           const w = clamp(ow + (e.clientX - sx), 150, 420);
           root.style.width = w + 'px';
         }
       });
-      window.addEventListener('pointerup', () => {
+      window.addEventListener('pointerup', function () {
         if (act) { act = null; savePos(); }
       });
     }
   }
+
+  bootPlayer();
+  document.addEventListener('astro:page-load', bootPlayer);
 </script>
