@@ -2,9 +2,17 @@
 // Dashboard 布局：公共 head + 顶部导航（所有页共享）+ 内容插槽
 // 顶栏含：返回按钮（子页显示）+ 品牌 + 菜单
 // 返回按钮：访问子页（/about /projects /tinkering /journal /404）时左上角显示，点击回 /home
+// 全局能力：
+//   1) <ClientRouter /> —— Astro View Transitions：子页面间切换不整页刷新
+//   2) <audio id="erius-audio" transition:persist> —— 全局常驻播放器内核，
+//      换页时 DOM 被保留 → 歌曲持续播放不中断（配合 MusicPlayerCard 的 UI 使用）
+//   3) 子页自动注入 <MusicPlayerCard mode="float" /> —— 右下角悬浮、可拖拽/缩放；
+//      主页（/home）的播放器以内嵌 docked 形态由 home.astro 自行渲染
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 import { menuItems } from '../data/profile';
 import NavIcon from '../components/NavIcon.astro';
+import MusicPlayerCard from '../components/MusicPlayerCard.astro';
 interface Props {
   title: string;
 }
@@ -20,6 +28,7 @@ const isSubPage = !isHome && path !== '/' && path !== '/index.html';
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title}</title>
+  <ClientRouter />
   <meta name="description" content="Erius — AI grad student, Obsidian plugin maker, agent tinkerer. Regain lost courage!" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2335bfab'/%3E%3Ctext x='50' y='72' font-size='60' text-anchor='middle' fill='white'%3EE%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.cn" />
@@ -57,6 +66,17 @@ const isSubPage = !isHome && path !== '/' && path !== '/index.html';
   <footer class="foot">
     <span>© 2026 Erius · Regain lost courage!</span>
   </footer>
+
+  {/*
+    全局常驻 audio —— 切子页面（View Transitions）时 transition:persist 保留该节点，
+    歌曲播放不中断。所有 MusicPlayerCard（主页 docked / 子页 float）共用这一个 audio。
+  */}
+  <audio id="erius-audio" preload="none" transition:persist="erius-audio"></audio>
+  {/*
+    子页右下角悬浮播放器：/home 主页用内嵌形态（home.astro 自己渲染 docked），
+    其余 Dashboard 子页（about/projects/tinkering/journal/404）自动悬浮右下角。
+  */}
+  {!isHome && <MusicPlayerCard mode="float" />}
 </body>
 </html>
 

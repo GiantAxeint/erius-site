@@ -22,7 +22,6 @@ function fmt(d: Date) {
       <span class="title">{latest.data.title}</span>
       <span class="meta">{fmt(latest.data.date)}</span>
     </a>
-    <a class="more" href={`/${latest.collection === 'tinkering' ? 'tinkering' : 'journal'}`}>查看全部 →</a>
   </article>
 )}
 <style>
@@ -50,9 +49,4 @@ function fmt(d: Date) {
     overflow: hidden;
   }
   .meta { font-size: 0.78rem; color: var(--color-secondary); font-family: var(--font-body); }
-  .more {
-    display: inline-block; margin-top: 10px; font-size: 0.82rem;
-    color: var(--color-brand); text-decoration: none;
-  }
-  .more:hover { text-decoration: underline; }
 </style>

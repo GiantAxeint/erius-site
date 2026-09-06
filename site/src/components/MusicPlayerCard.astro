@@ -1,88 +1,253 @@
 ---
-// 随机播放歌曲卡（横向长条：宽:高 = 3:1，由容器宽度反推高度）
-// 把 .mp3/.m4a/.ogg/.wav/.aac/.flac 放到 site/public/music/，build 时扫描列出
-// 功能：上一首 / 暂停-播放 / 下一首 + 实时进度条 + 当前歌曲名；不显示音量/计数/文案
-// 行为：单首结束后自动随机切下一首（同集合内随机不重复当前）
+// ============================================================
+// MusicPlayerCard.astro —— 全局播放器（支持 docked / float 两种形态）
+// ============================================================
+// 用法：
+//   <MusicPlayerCard mode="docked" />  // 主页：嵌入页面流（右列），固定不可拖
+//   <MusicPlayerCard mode="float"  />  // 子页：fixed 右下角悬浮，可拖拽移动、可右下角手柄缩放
+// ============================================================
+// 播放架构（切子页面不断播的关键）：
+//   - audio 元素是"全局常驻"的，由 layouts/Dashboard.astro 注入：
+//     <audio id="erius-audio" ... transition:persist="erius-audio" />
+//     该元素在 View Transitions 换页时被保留（transition:persist），歌曲不中断。
+//   - 本组件只负责"UI + 控制逻辑"，每次导航后重新渲染并从全局 audio 恢复状态。
+//     因此主页卡（docked）切到子页悬浮条（float）时，播放进度无缝延续。
+// ============================================================
+// 歌曲放置：site/public/music/ 下放 .mp3/.m4a/.ogg/.wav/.aac/.flac
+//   文件名（不含扩展名）= 歌名；build 时自动扫描列表注入页面。
+//   本地完整路径：site/public/music/（GitHub 仓库同目录）
+// ============================================================
 import { readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+interface Props {
+  mode?: 'docked' | 'float';
+}
+const { mode = 'float' } = Astro.props;
+const isFloat = mode === 'float';
+
 const musicDir = join(process.cwd(), 'public', 'music');
 const exts = /\.(mp3|m4a|ogg|wav|aac|flac)$/i;
-const raw = existsSync(musicDir)
-  ? readdirSync(musicDir).filter(f => exts.test(f)).sort()
-  : [];
-const songs = raw.map(f => ({
-  file: `/music/${f}`,
-  name: f.replace(exts, ''),
-}));
+const raw = existsSync(musicDir) ? readdirSync(musicDir).filter(f => exts.test(f)).sort() : [];
+const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }));
 ---
-<div class="card music">
-  {songs.length === 0 ? (
-    <p class="empty">把音频文件放进 <code>site/public/music/</code> 目录后重新部署。</p>
+{
+  songs.length === 0 ? (
+    <p class="card empty">把音频放进 <code>site/public/music/</code> 后重新部署</p>
   ) : (
-    <div class="player" data-songs={JSON.stringify(songs)}>
-      <span class="dot" aria-hidden="true"></span>
-      <span class="name" id="music-name">—</span>
+    <div
+      class:list={['mp', 'card', { float: isFloat, docked: !isFloat }]}
+      data-mode={mode}
+      data-songs={JSON.stringify(songs)}
+      id="mp-ui"
+    >
+      {/* 顶部行：状态点 + 当前歌曲名 + 时间（float 形态右侧带拖拽手柄） */}
+      <div class="mp-head">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="name" data-role="name">—</span>
+        <span class="time" data-role="time">0:00 / 0:00</span>
+        {isFloat && <span class="grip" data-role="grip" title="拖拽移动">⠿</span>}
+      </div>
+      {/* 中部：实时进度条 */}
       <input
-        type="range"
-        id="music-seek"
         class="seek"
+        type="range"
+        data-role="seek"
         min="0" max="1000" value="0" step="1"
         title="播放进度"
       />
-      <span class="time" id="music-time">0:00 / 0:00</span>
+      {/* 底部：上一首 / 暂停-播放 / 下一首 */}
       <div class="ctrl">
-        <button class="btn" id="music-prev" type="button" aria-label="上一首" title="上一首">⏮</button>
-        <button class="btn play" id="music-play" type="button" aria-label="播放或暂停" title="播放 / 暂停">▶</button>
-        <button class="btn" id="music-next" type="button" aria-label="下一首" title="下一首">⏭</button>
+        <button class="btn" type="button" data-role="prev" aria-label="上一首" title="上一首">⏮</button>
+        <button class="btn play" type="button" data-role="play" aria-label="播放或暂停" title="播放 / 暂停">▶</button>
+        <button class="btn" type="button" data-role="next" aria-label="下一首" title="下一首">⏭</button>
       </div>
-      <audio id="music-audio" preload="none"></audio>
+      {isFloat && <span class="rz" data-role="resize" title="拖拽调整大小"></span>}
     </div>
-  )}
-</div>
+  )
+}
+
+<style>
+  /* ---------- 通用外观（两种形态一致） ---------- */
+  .mp {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    aspect-ratio: 1 / 0.6;              /* ★ 需求3：宽:高 = 1:0.6 */
+    width: 100%;
+    padding: 12px 16px;
+    user-select: none;
+    color: var(--color-primary);
+    font-family: var(--font-body);
+  }
+  .mp * { box-sizing: border-box; }
+
+  .mp-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--color-brand);
+    box-shadow: 0 0 0 4px rgba(53,191,171,.18);
+    flex: 0 0 auto;
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(53,191,171,.18); }
+    50%      { box-shadow: 0 0 0 9px rgba(53,191,171,0); }
+  }
+  .name {
+    flex: 0 1 auto; min-width: 0;
+    font-weight: 600; font-size: 0.92rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .time {
+    margin-left: auto;
+    font-size: 0.72rem; color: var(--color-secondary);
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .seek {
+    width: 100%;
+    accent-color: var(--color-brand);
+    height: 4px; cursor: pointer;
+  }
+  .ctrl { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid rgba(53,191,171,.35);
+    background: rgba(255,255,255,.6);
+    cursor: pointer; font-size: 0.7rem; line-height: 1;
+    color: var(--color-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0;
+    transition: background .15s, transform .12s;
+  }
+  .btn:hover { background: rgba(53,191,171,.18); }
+  .btn:active { transform: scale(.92); }
+  .btn.play {
+    background: var(--color-brand); color: #fff; border-color: var(--color-brand);
+    width: 30px; height: 30px; font-size: 0.8rem;
+  }
+  .btn.play:hover { background: var(--color-brand-secondary); border-color: var(--color-brand-secondary); }
+
+  .empty {
+    color: var(--color-secondary); font-size: .8rem; line-height: 1.6; text-align: center;
+  }
+  .empty code {
+    background: rgba(53,191,171,.14); color: var(--color-brand);
+    padding: 1px 6px; border-radius: 4px; font-size: .85em;
+  }
+
+  /* ---------- docked：主页内嵌（固定不拖） ---------- */
+  .docked .grip, .docked .rz { display: none; }
+
+  /* ---------- float：子页 fixed 右下角悬浮（可拖、可缩放） ---------- */
+  .mp.float {
+    position: fixed;
+    z-index: 9999;
+    width: 240px;
+    left: calc(100vw - 240px - 22px);
+    top: calc(100vh - 144px - 22px);
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 8px 28px rgba(51,79,82,.22);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 12px 14px;
+    font-size: .9rem;
+  }
+  .grip {
+    flex: 0 0 auto;
+    color: var(--color-secondary);
+    font-size: .95rem; letter-spacing: -2px;
+    cursor: grab;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .grip:active { cursor: grabbing; }
+  .rz {
+    position: absolute;
+    right: 3px; bottom: 3px;
+    width: 16px; height: 16px;
+    cursor: nwse-resize;
+    opacity: .45;
+    background:
+      linear-gradient(135deg, transparent 0 50%, var(--color-secondary) 50% 58%, transparent 58% 100%) no-repeat right bottom / 12px 12px;
+  }
+  .rz:hover { opacity: 1; }
+</style>
 
 <script>
-  // 仅在卡片存在时执行 —— 用户刷新页面时跑这套逻辑
-  const root = document.querySelector('.player') as HTMLElement | null;
+  // ============================================================
+  // 全局播放逻辑 —— UI 每次导航重建，但 audio（#erius-audio）常驻，切页不断播
+  // ============================================================
+  const root = document.getElementById('mp-ui') as HTMLElement | null;
   if (root) {
-    const songs: { file: string; name: string }[] = JSON.parse(
-      root.dataset.songs || '[]'
-    );
-    const audio = document.getElementById('music-audio') as HTMLAudioElement;
-    const nameEl = document.getElementById('music-name') as HTMLElement;
-    const playBtn = document.getElementById('music-play') as HTMLButtonElement;
-    const prevBtn = document.getElementById('music-prev') as HTMLButtonElement;
-    const nextBtn = document.getElementById('music-next') as HTMLButtonElement;
-    const seek = document.getElementById('music-seek') as HTMLInputElement;
-    const timeEl = document.getElementById('music-time') as HTMLElement;
+    const isFloat = root.dataset.mode === 'float';
+    const songs: { file: string; name: string }[] = JSON.parse(root.dataset.songs || '[]');
+
+    // 找到全局常驻 audio（Dashboard 注入）；找不到则兜底创建一个
+    let audio = document.getElementById('erius-audio') as HTMLAudioElement | null;
+    if (!audio) {
+      audio = document.createElement('audio');
+      audio.id = 'erius-audio';
+      audio.preload = 'none';
+      document.body.appendChild(audio);
+    }
+
+    const nameEl = root.querySelector('[data-role="name"]') as HTMLElement;
+    const timeEl = root.querySelector('[data-role="time"]') as HTMLElement;
+    const seekEl = root.querySelector('[data-role="seek"]') as HTMLInputElement;
+    const playBtn = root.querySelector('[data-role="play"]') as HTMLButtonElement;
+    const prevBtn = root.querySelector('[data-role="prev"]') as HTMLButtonElement;
+    const nextBtn = root.querySelector('[data-role="next"]') as HTMLButtonElement;
 
     let idx = -1;
+
+    function nameOf(src: string): string {
+      const hit = songs.find(s => src.endsWith(s.file));
+      if (hit) return hit.name;
+      try {
+        const base = decodeURIComponent(src.split('/').pop() || '');
+        return base.replace(/\.(mp3|m4a|ogg|wav|aac|flac)$/i, '');
+      } catch { return '未知曲目'; }
+    }
     function fmt(s: number) {
       if (!isFinite(s) || s < 0) return '0:00';
       const m = Math.floor(s / 60);
       const r = Math.floor(s % 60);
       return `${m}:${String(r).padStart(2, '0')}`;
     }
-    function pickRandom(): void {
-      if (songs.length === 0) return;
-      // 在剩余曲目里随机抽一首（避免与当前相同）
+    function syncFromAudio() {
+      // 换页/换实例后：从全局 audio 恢复显示状态（歌曲不中断时 UI 无缝跟上）
+      if (audio.src) {
+        nameEl.textContent = nameOf(audio.src);
+        idx = songs.findIndex(s => audio.src.endsWith(s.file));
+      }
+      playBtn.textContent = audio.paused ? '▶' : '⏸';
+      if (audio.duration) {
+        seekEl.value = String(Math.floor((audio.currentTime / audio.duration) * 1000));
+        timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+      }
+    }
+
+    function playSrc(i: number) {
+      idx = i;
+      audio.src = songs[i].file;
+      nameEl.textContent = songs[i].name;
+      audio.play().catch(() => { /* 自动播放拦截 → 等用户再点 ▶ */ });
+      playBtn.textContent = '⏸';
+    }
+    function pickRandom() {
+      if (!songs.length) return;
       let i = idx;
       if (songs.length === 1) i = 0;
       else { while (i === idx) i = Math.floor(Math.random() * songs.length); }
-      idx = i;
-      audio.src = songs[i].file;
-      nameEl.textContent = songs[i].name;
-      audio.play().catch(() => { /* 浏览器自动播放拦截 → 等用户再点一次 */ });
-      playBtn.textContent = '⏸';
+      playSrc(i);
     }
-    function pickPrev(): void {
-      if (songs.length === 0) return;
+    function pickPrev() {
+      if (!songs.length) return;
       const i = idx <= 0 ? songs.length - 1 : idx - 1;
-      idx = i;
-      audio.src = songs[i].file;
-      nameEl.textContent = songs[i].name;
-      audio.play().catch(() => {});
-      playBtn.textContent = '⏸';
+      playSrc(i);
     }
 
     playBtn.addEventListener('click', () => {
@@ -94,88 +259,74 @@ const songs = raw.map(f => ({
     nextBtn.addEventListener('click', pickRandom);
 
     audio.addEventListener('timeupdate', () => {
-      if (!audio.duration) { timeEl.textContent = '0:00 / 0:00'; seek.value = '0'; return; }
-      seek.value = String(Math.floor((audio.currentTime / audio.duration) * 1000));
+      if (!audio.duration) { timeEl.textContent = '0:00 / 0:00'; seekEl.value = '0'; return; }
+      seekEl.value = String(Math.floor((audio.currentTime / audio.duration) * 1000));
       timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
     });
-    seek.addEventListener('input', () => {
-      if (audio.duration) audio.currentTime = (Number(seek.value) / 1000) * audio.duration;
+    audio.addEventListener('play', () => { playBtn.textContent = '⏸'; });
+    audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
+    audio.addEventListener('ended', pickRandom);
+    seekEl.addEventListener('input', () => {
+      if (audio.duration) audio.currentTime = (Number(seekEl.value) / 1000) * audio.duration;
     });
-    // 单曲结束 → 自动随机切下一首
-    audio.addEventListener('ended', () => pickRandom());
+
+    // 初次渲染时恢复跨页播放状态
+    syncFromAudio();
+
+    // ---------------- float：拖拽移动 + 右下角手柄缩放（子页可用） ----------------
+    if (isFloat) {
+      const grip = root.querySelector('[data-role="grip"]') as HTMLElement;
+      const rz = root.querySelector('[data-role="resize"]') as HTMLElement;
+
+      // 记忆上次位置/尺寸（同会话内切页不跳回默认角）
+      const saved = (() => {
+        try { return JSON.parse(localStorage.getItem('erius-mp-pos') || 'null'); } catch { return null; }
+      })();
+      if (saved) {
+        root.style.left = saved.left + 'px';
+        root.style.top = saved.top + 'px';
+        root.style.width = saved.w + 'px';
+      }
+
+      function savePos() {
+        try {
+          localStorage.setItem('erius-mp-pos', JSON.stringify({
+            left: root.offsetLeft, top: root.offsetTop, w: root.offsetWidth,
+          }));
+        } catch { /* ignore */ }
+      }
+
+      // 拖拽（grip）与缩放（rz 手柄）
+      let act: 'drag' | 'resize' | null = null;
+      let sx = 0, sy = 0, ow = 0, ox = 0, oy = 0;
+      const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+      grip.addEventListener('pointerdown', (e: PointerEvent) => {
+        e.preventDefault();
+        act = 'drag';
+        sx = e.clientX; sy = e.clientY;
+        ox = root.offsetLeft; oy = root.offsetTop;
+        root.setPointerCapture(e.pointerId);
+      });
+      rz.addEventListener('pointerdown', (e: PointerEvent) => {
+        e.preventDefault(); e.stopPropagation();
+        act = 'resize';
+        sx = e.clientX; sy = e.clientY;
+        ow = root.offsetWidth;
+        root.setPointerCapture(e.pointerId);
+      });
+      window.addEventListener('pointermove', (e: PointerEvent) => {
+        if (act === 'drag') {
+          root.style.left = clamp(ox + e.clientX - sx, -root.offsetWidth + 60, innerWidth - 40) + 'px';
+          root.style.top = clamp(oy + e.clientY - sy, 8, innerHeight - 40) + 'px';
+        } else if (act === 'resize') {
+          const w = clamp(ow + (e.clientX - sx), 150, 420);
+          root.style.width = w + 'px';
+        }
+      });
+      window.addEventListener('pointerup', () => {
+        if (act) { act = null; savePos(); }
+      });
+    }
   }
 </script>
-
-<style>
-  /* 横向 3:1：宽由父容器决定（占右列 100%），高 = 宽 / 3 */
-  .card.music {
-    padding: 10px 14px;
-    aspect-ratio: 3 / 1;
-    width: 100%;
-    overflow: hidden;
-    display: flex; align-items: center;
-  }
-  .empty {
-    color: var(--color-secondary); font-size: 0.78rem; line-height: 1.5;
-    text-align: center; width: 100%;
-  }
-  .empty code {
-    background: rgba(53,191,171,.14); color: var(--color-brand);
-    padding: 1px 5px; border-radius: 4px; font-size: 0.85em;
-  }
-  .player {
-    display: flex; align-items: center; gap: 10px;
-    width: 100%; min-width: 0;
-  }
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--color-brand);
-    box-shadow: 0 0 0 4px rgba(53,191,171,.18);
-    flex: 0 0 auto;
-    animation: music-pulse 1.8s ease-in-out infinite;
-  }
-  @keyframes music-pulse {
-    0%, 100% { box-shadow: 0 0 0 4px rgba(53,191,171,.18); }
-    50%      { box-shadow: 0 0 0 8px rgba(53,191,171,0); }
-  }
-  .name {
-    font-weight: 600; color: var(--color-primary);
-    font-size: 0.82rem;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    flex: 0 1 auto; min-width: 0; max-width: 38%;
-    font-family: var(--font-body);
-  }
-  .seek {
-    flex: 1 1 auto; min-width: 0;
-    accent-color: var(--color-brand);
-    height: 4px;
-    cursor: pointer;
-  }
-  .time {
-    font-size: 0.72rem; color: var(--color-secondary);
-    white-space: nowrap; flex: 0 0 auto;
-    font-variant-numeric: tabular-nums;
-    font-family: var(--font-body);
-  }
-  .ctrl { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
-  .btn {
-    width: 26px; height: 26px; border-radius: 50%;
-    border: 1px solid rgba(53,191,171,.35);
-    background: rgba(255,255,255,.6);
-    cursor: pointer; font-size: 0.7rem; color: var(--color-primary);
-    display: inline-flex; align-items: center; justify-content: center;
-    padding: 0; line-height: 1;
-    transition: background .15s, transform .12s;
-  }
-  .btn:hover { background: rgba(53,191,171,.18); }
-  .btn:active { transform: scale(0.92); }
-  .btn.play {
-    background: var(--color-brand); color: #fff; border-color: var(--color-brand);
-    width: 30px; height: 30px; font-size: 0.78rem;
-  }
-  .btn.play:hover { background: var(--color-brand-secondary); border-color: var(--color-brand-secondary); }
-  @media (max-width: 700px) {
-    .card.music { aspect-ratio: 5 / 2; }
-    .name { max-width: 30%; }
-  }
-</style>
