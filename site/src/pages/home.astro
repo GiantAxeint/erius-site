@@ -72,14 +72,14 @@ import { profile, menuItems, socialLinks } from '../data/profile';
     /* 左列（UserCard/LatestPosts）：与问候卡顶对齐，左列中段卡略下错落 */
     .left-top    { margin-top: 0; }
     .left-mid    { margin-top: 28px; }
-    /* 右列：时钟贴 6 右上对角 + 不与日历对齐；日历顶对齐 6 中心 + 略左贴 6；音乐斜右下对角靠 */
-    .right-top   { margin-top: 6px;  margin-left: -10px; }  /* 时钟：贴 6 右上角 */
-    .right-mid   { margin-top: 0;    margin-left: -6px; }   /* 日历：顶对齐 6 中心，略左贴 6 */
-    .right-foot  { margin-top: 10px; margin-left: -4px; }   /* 音乐：向 6 斜右下靠 */
+    /* 右列：时钟往 6 右上对角挪（6 之上偏右），日历顶对齐 6 中心 + 略左贴中央，音乐往 6 斜右下挪 */
+    .right-top   { margin-top: 14px; margin-left: 18px; }   /* 时钟：偏右但不与日历垂直对齐 */
+    .right-mid   { margin-top: 0;   margin-left: -4px; }    /* 日历：顶边对齐 6 中心，略左贴 6 */
+    .right-foot  { margin-top: 14px; margin-left: 12px; }   /* 音乐：向 6 斜右下靠 */
   }
 
   .center-main { grid-area: main; align-self: center; justify-self: center; width: 100%; max-width: 440px; /* 略向左下偏移，朝左列'最新文章'卡的左下对角呼应 */ margin-left: -10px; margin-top: 14px; }
-  .center-foot { grid-area: foot; justify-self: center; margin-top: -36px; }  /* 上移贴近问候卡 */
+  .center-foot { grid-area: foot; justify-self: center; margin-top: -18px; }  /* 上移贴近问候卡 */
   .left-top    { grid-area: left-top; }
   .left-mid    { grid-area: left-mid; }
   .right-top   { grid-area: right-top; }
