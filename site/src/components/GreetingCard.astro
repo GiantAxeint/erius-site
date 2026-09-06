@@ -55,22 +55,23 @@ const { name, intro } = Astro.props;
     box-shadow: 0 12px 32px rgba(53, 191, 171, 0.28);
     overflow: hidden;
   }
-  /* 顶层（动态问候语）：最小字 */
+  /* 顶层（动态问候语）：与底层同字号 1.5rem */
   .greet .hello {
     color: rgba(255,255,255,.85);
-    font-size: 1.0rem;            /* 比 intro 小一点 */
+    font-size: 1.5rem;            /* 与 intro 一致 */
     margin-bottom: 6px;
   }
-  /* 中间层（Hi！I'm Erius）：最大字 */
+  /* 中间层（Hi！I'm Erius）：最大字 3.0rem */
   .greet h1 {
     color: #fff;
-    font-size: 3.1rem;            /* 保持页面视觉重心 */
+    font-size: 3.0rem;            /* 页面视觉重心 */
     margin-bottom: 10px;
+    white-space: nowrap;
   }
-  /* 底层（Regain lost courage!）：中等字，比 hello 大，比 h1 小 */
+  /* 底层（Regain lost courage!）：与顶层同字号 1.5rem */
   .greet .intro {
     color: rgba(255,255,255,.92);
-    font-size: 1.4rem;            /* 介于 hello 与 h1 之间 */
+    font-size: 1.5rem;
   }
   /* 点缀：低透明度圆 */
   .deco { position: absolute; border-radius: 50%; pointer-events: none; }
@@ -84,4 +85,16 @@ const { name, intro } = Astro.props;
   }
   /* 卡片内文字取白色 → 覆盖 .hand 的 primary 色 */
   .hand { color: inherit; }
+
+  /* ---------- 响应式：窄屏阶梯降字号，保持三段同轴居中、不折行 ---------- */
+  @media (max-width: 560px) {
+    .greet { padding: 34px 20px; }
+    .greet h1 { font-size: 2.4rem; }        /* 3.0 → 2.4 */
+    .greet .hello, .greet .intro { font-size: 1.15rem; }  /* 1.5 → 1.15 */
+  }
+  @media (max-width: 360px) {
+    .greet { padding: 28px 14px; }
+    .greet h1 { font-size: 2.0rem; }        /* 2.4 → 2.0 */
+    .greet .hello, .greet .intro { font-size: 1.0rem; }
+  }
 </style>

@@ -178,173 +178,234 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
 
 <script is:inline>
   // ============================================================
-  // 全局播放逻辑 —— UI 每次导航重建，但 audio（#erius-audio）常驻，切页不断播
-  // View Transitions 下默认 hoisted script 只跑一次。
-  // 这里把整个初始化包成 bootPlayer()，每次 astro:page-load 都重跑一次。
+  // 全局播放逻辑 v3（2026-09-07 重构）
+  // 修复的三个 bug 及其根因：
+  //   A. 播放/暂停按钮"无响应"：bootPlayer 初次执行 + astro:page-load
+  //      在同一 DOM 上跑两次 → click 被绑两次。一次点击 = pause 后立刻
+  //      被第二个 handler play() 覆盖 → 肉眼可见"暂停无效"。
+  //      修复：模块级状态 window.__eriusMP + boot 守卫（同一 DOM 只初始化一次）。
+  //   B. audio 跨页常驻 → 每次导航都给同一 audio 重复 addEventListener，
+  //      监听器无限累积。修复：audio 事件只绑一次（S.bound 守卫），
+  //      通过"当前活跃 UI 指针"S.ui 操作最新 DOM。
+  //   C. 切歌可能重播当前歌：audio.src 是百分号编码的绝对 URL
+  //      （如 .../music/%E6%A2%A6.mp3），与 songs[].file 的原始中文名
+  //      endsWith 永远失配 → idx 恒 -1 → 随机切歌不排除当前。
+  //      修复：统一按 decodeURIComponent 后的 basename 匹配。
   // ============================================================
-  function bootPlayer() {
-    const root = document.getElementById('mp-ui');
-    if (!root) return;  // 当前页没渲染播放器（如根名片 /）就直接退出
+  (function () {
+    var S = window.__eriusMP = window.__eriusMP || { bound: false, ui: null, songs: [], idx: -1, audio: null };
 
-    const isFloat = root.dataset.mode === 'float';
-    const songs = JSON.parse(root.dataset.songs || '[]');
-
-    let audio = document.getElementById('erius-audio');
-    if (!audio) {
-      audio = document.createElement('audio');
-      audio.id = 'erius-audio';
-      audio.preload = 'none';
-      document.body.appendChild(audio);
+    function ensureAudio() {
+      if (S.audio && document.body.contains(S.audio)) return S.audio;
+      var a = document.getElementById('erius-audio');
+      if (!a) {
+        // 兜底：组件渲染早于 Dashboard 的 <audio> 时自建（同样带 persist 属性）
+        a = document.createElement('audio');
+        a.id = 'erius-audio';
+        a.preload = 'none';
+        a.setAttribute('data-astro-transition-persist', 'erius-audio');
+        document.body.appendChild(a);
+      }
+      S.audio = a;
+      return a;
     }
 
-    const nameEl  = root.querySelector('[data-role="name"]');
-    const timeEl  = root.querySelector('[data-role="time"]');
-    const seekEl  = root.querySelector('[data-role="seek"]');
-    const playBtn = root.querySelector('[data-role="play"]');
-    const prevBtn = root.querySelector('[data-role="prev"]');
-    const nextBtn = root.querySelector('[data-role="next"]');
-
-    let idx = -1;
-
-    function nameOf(src) {
-      const hit = songs.find(function (s) { return src.endsWith(s.file); });
-      if (hit) return hit.name;
-      try {
-        const base = decodeURIComponent((src.split('/').pop() || ''));
-        return base.replace(/\.(mp3|m4a|ogg|wav|aac|flac)$/i, '');
-      } catch (e) { return '未知曲目'; }
+    // 统一"文件键"：解码后的 basename（audio.src 是编码 URL，file 是原始中文名）
+    function baseKey(u) {
+      var s = String(u || '');
+      try { s = decodeURIComponent(s); } catch (e) {}
+      return (s.split('/').pop() || '').toLowerCase();
+    }
+    function idxOfSrc(src) {
+      var k = baseKey(src);
+      if (!k) return -1;
+      for (var i = 0; i < S.songs.length; i++) {
+        if (baseKey(S.songs[i].file) === k) return i;
+      }
+      return -1;
     }
     function fmt(s) {
       if (!isFinite(s) || s < 0) return '0:00';
-      const m = Math.floor(s / 60);
-      const r = Math.floor(s % 60);
+      var m = Math.floor(s / 60);
+      var r = Math.floor(s % 60);
       return m + ':' + String(r).padStart(2, '0');
     }
-    function syncFromAudio() {
-      if (audio.src) {
-        nameEl.textContent = nameOf(audio.src);
-        idx = songs.findIndex(function (s) { return audio.src.endsWith(s.file); });
-      }
-      playBtn.textContent = audio.paused ? '▶' : '⏸';
-      if (isFinite(audio.duration) && audio.duration > 0) {
-        seekEl.value = String(Math.floor((audio.currentTime / audio.duration) * 1000));
-        timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
-      } else {
-        seekEl.value = '0';
-        timeEl.textContent = '0:00 / 0:00';
-      }
-    }
 
+    // 播放核心（模块级定义，audio 事件与按钮共用）
     function playSrc(i) {
-      idx = i;
-      audio.src = songs[i].file;
-      nameEl.textContent = songs[i].name;
-      seekEl.value = '0';
-      audio.play().catch(function () { /* 自动播放拦截 → 等用户再点 ▶ */ });
-      playBtn.textContent = '⏸';
+      if (!S.songs.length) return;
+      if (i < 0 || i >= S.songs.length) i = 0;
+      S.idx = i;
+      var a = ensureAudio();
+      a.src = S.songs[i].file;
+      var ui = S.ui;
+      if (ui) {
+        ui.nameEl.textContent = S.songs[i].name;
+        ui.seekEl.value = '0';
+        ui.timeEl.textContent = '0:00 / 0:00';
+      }
+      var p = a.play();
+      if (p && p.catch) p.catch(function () { setPlayIcon(false); }); // 自动播放被拦 → 按钮回退 ▶
+      setPlayIcon(true);
     }
     function pickRandom() {
-      if (!songs.length) return;
-      let i = idx;
-      if (songs.length === 1) i = 0;
-      else { while (i === idx) i = Math.floor(Math.random() * songs.length); }
+      if (!S.songs.length) return;
+      if (S.songs.length === 1) { playSrc(0); return; }
+      var cur = (S.idx >= 0 && S.idx < S.songs.length) ? S.idx : idxOfSrc(ensureAudio().src);
+      // 从未播过（cur 无效）→ 直接随机任意一首；否则排除当前歌
+      if (!(cur >= 0 && cur < S.songs.length)) { playSrc(Math.floor(Math.random() * S.songs.length)); return; }
+      var i = cur;
+      var guard = 0;
+      while (i === cur && guard++ < 100) i = Math.floor(Math.random() * S.songs.length);
       playSrc(i);
     }
     function pickPrev() {
-      if (!songs.length) return;
-      const i = idx <= 0 ? songs.length - 1 : idx - 1;
-      playSrc(i);
+      if (!S.songs.length) return;
+      var cur = (S.idx >= 0 && S.idx < S.songs.length) ? S.idx : idxOfSrc(ensureAudio().src);
+      if (!(cur >= 0 && cur < S.songs.length)) { playSrc(0); return; }
+      playSrc(cur <= 0 ? S.songs.length - 1 : cur - 1);
+    }
+    function togglePlay() {
+      if (!S.songs.length) return;
+      var a = ensureAudio();
+      if (!a.src) { pickRandom(); return; }   // 从未选歌：先随机起播
+      if (a.paused) {
+        var p = a.play();
+        if (p && p.catch) p.catch(function () { setPlayIcon(false); });
+        setPlayIcon(true);
+      } else {
+        a.pause();
+        setPlayIcon(false);
+      }
+    }
+    function setPlayIcon(playing) {
+      if (S.ui) S.ui.playBtn.textContent = playing ? '⏸' : '▶';
+    }
+    function syncUIFromAudio() {
+      var ui = S.ui, a = ensureAudio();
+      if (!ui) return;
+      if (a.src) {
+        ui.nameEl.textContent = idxOfSrc(a.src) >= 0 ? S.songs[idxOfSrc(a.src)].name : nameFallback(a.src);
+        S.idx = idxOfSrc(a.src);
+      }
+      ui.playBtn.textContent = a.paused ? '▶' : '⏸';
+      if (isFinite(a.duration) && a.duration > 0) {
+        ui.seekEl.value = String(Math.floor((a.currentTime / a.duration) * 1000));
+        ui.timeEl.textContent = fmt(a.currentTime) + ' / ' + fmt(a.duration);
+      } else {
+        ui.seekEl.value = '0';
+        ui.timeEl.textContent = '0:00 / 0:00';
+      }
+    }
+    function nameFallback(src) {
+      var b = baseKey(src).replace(/\.(mp3|m4a|ogg|wav|aac|flac)$/i, '');
+      return b || '未知曲目';
     }
 
-    // ---------- 控件绑定（每次 bootPlayer 都重绑） ----------
-    playBtn.addEventListener('click', function () {
-      if (!audio.src) { pickRandom(); return; }
-      if (audio.paused) { audio.play(); playBtn.textContent = '⏸'; }
-      else { audio.pause(); playBtn.textContent = '▶'; }
-    });
-    prevBtn.addEventListener('click', pickPrev);
-    nextBtn.addEventListener('click', pickRandom);
-
-    audio.addEventListener('timeupdate', function () {
-      if (!isFinite(audio.duration) || audio.duration <= 0) {
-        timeEl.textContent = '0:00 / 0:00'; seekEl.value = '0'; return;
-      }
-      // 用户拖动 seek 时不要回写覆盖它
-      if (seekEl.dataset.dragging === '1') return;
-      seekEl.value = String(Math.floor((audio.currentTime / audio.duration) * 1000));
-      timeEl.textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
-    });
-    audio.addEventListener('play',  function () { playBtn.textContent = '⏸'; });
-    audio.addEventListener('pause', function () { playBtn.textContent = '▶'; });
-    audio.addEventListener('loadedmetadata', syncFromAudio);
-    audio.addEventListener('ended', pickRandom);
-
-    // ★ seek 修复：input 前必须确认 duration 可用，否则切到 NaN 会卡死 audio
-    seekEl.addEventListener('pointerdown', function () { seekEl.dataset.dragging = '1'; });
-    seekEl.addEventListener('pointerup',   function () { seekEl.dataset.dragging = '0'; });
-    seekEl.addEventListener('input', function () {
-      if (!isFinite(audio.duration) || audio.duration <= 0) {
-        if (audio.src) { audio.load(); }
-        return;
-      }
-      audio.currentTime = (Number(seekEl.value) / 1000) * audio.duration;
-    });
-
-    syncFromAudio();
-
-    if (isFloat) {
-      const grip = root.querySelector('[data-role="grip"]');
-      const rz = root.querySelector('[data-role="resize"]');
-
-      const saved = (function () {
-        try { return JSON.parse(localStorage.getItem('erius-mp-pos') || 'null'); } catch (e) { return null; }
-      })();
-      if (saved) {
-        root.style.left = saved.left + 'px';
-        root.style.top  = saved.top  + 'px';
-        root.style.width = saved.w   + 'px';
-      }
-      function savePos() {
-        try {
-          localStorage.setItem('erius-mp-pos', JSON.stringify({
-            left: root.offsetLeft, top: root.offsetTop, w: root.offsetWidth,
-          }));
-        } catch (e) { /* ignore */ }
-      }
-
-      let act = null;
-      let sx = 0, sy = 0, ow = 0, ox = 0, oy = 0;
-      const clamp = function (v, min, max) { return Math.min(max, Math.max(min, v)); };
-
-      grip.addEventListener('pointerdown', function (e) {
-        e.preventDefault();
-        act = 'drag';
-        sx = e.clientX; sy = e.clientY;
-        ox = root.offsetLeft; oy = root.offsetTop;
-        root.setPointerCapture(e.pointerId);
+    // ---------- audio 全局事件：只绑一次（audio 跨页常驻，防累积） ----------
+    if (!S.bound) {
+      S.bound = true;
+      ensureAudio().addEventListener('timeupdate', function () {
+        var ui = S.ui, a = S.audio;
+        if (!ui || !a) return;
+        if (!isFinite(a.duration) || a.duration <= 0) { ui.timeEl.textContent = '0:00 / 0:00'; ui.seekEl.value = '0'; return; }
+        if (ui.seekEl.dataset.dragging === '1') return;   // 拖动中不回写
+        ui.seekEl.value = String(Math.floor((a.currentTime / a.duration) * 1000));
+        ui.timeEl.textContent = fmt(a.currentTime) + ' / ' + fmt(a.duration);
       });
-      rz.addEventListener('pointerdown', function (e) {
-        e.preventDefault(); e.stopPropagation();
-        act = 'resize';
-        sx = e.clientX; sy = e.clientY;
-        ow = root.offsetWidth;
-        root.setPointerCapture(e.pointerId);
+      ensureAudio().addEventListener('play',  function () { setPlayIcon(true); });
+      ensureAudio().addEventListener('pause', function () { setPlayIcon(false); });
+      ensureAudio().addEventListener('loadedmetadata', syncUIFromAudio);
+      ensureAudio().addEventListener('ended', pickRandom);   // 单曲播完自动随机下一首
+    }
+
+    // ---------- boot：绑定当前页 UI（同一 DOM 只初始化一次） ----------
+    function boot() {
+      var root = document.getElementById('mp-ui');
+      if (!root) return;
+      if (root.dataset.booted) return;   // ★ 防同一 DOM 重复初始化（page-load + inline 双触发）
+      root.dataset.booted = '1';
+
+      var isFloat = root.dataset.mode === 'float';
+      var songs = JSON.parse(root.dataset.songs || '[]');
+      S.songs = songs;   // 播放核心读这份列表
+
+      var nameEl  = root.querySelector('[data-role="name"]');
+      var timeEl  = root.querySelector('[data-role="time"]');
+      var seekEl  = root.querySelector('[data-role="seek"]');
+      var playBtn = root.querySelector('[data-role="play"]');
+      var prevBtn = root.querySelector('[data-role="prev"]');
+      var nextBtn = root.querySelector('[data-role="next"]');
+      if (!playBtn || !seekEl) return;
+
+      S.ui = { nameEl: nameEl, timeEl: timeEl, seekEl: seekEl, playBtn: playBtn };
+
+      // 按钮（只绑当前 DOM 一次）
+      playBtn.addEventListener('click', togglePlay);
+      prevBtn.addEventListener('click', pickPrev);
+      nextBtn.addEventListener('click', pickRandom);
+
+      // seek：拖动期间不回写；input 前校验 duration（防 NaN 卡死）
+      seekEl.addEventListener('pointerdown', function () { seekEl.dataset.dragging = '1'; });
+      seekEl.addEventListener('pointerup',   function () { seekEl.dataset.dragging = '0'; });
+      seekEl.addEventListener('input', function () {
+        var a = ensureAudio();
+        if (!isFinite(a.duration) || a.duration <= 0) { if (a.src) a.load(); return; }
+        a.currentTime = (Number(seekEl.value) / 1000) * a.duration;
       });
-      window.addEventListener('pointermove', function (e) {
-        if (act === 'drag') {
-          root.style.left = clamp(ox + e.clientX - sx, -root.offsetWidth + 60, innerWidth - 40) + 'px';
-          root.style.top  = clamp(oy + e.clientY - sy, 8, innerHeight - 40) + 'px';
-        } else if (act === 'resize') {
-          const w = clamp(ow + (e.clientX - sx), 150, 420);
-          root.style.width = w + 'px';
+
+      // 从常驻 audio 恢复 UI（切页/刷新后播放状态不丢）
+      syncUIFromAudio();
+
+      if (isFloat) {
+        var grip = root.querySelector('[data-role="grip"]');
+        var rz = root.querySelector('[data-role="resize"]');
+        var saved = null;
+        try { saved = JSON.parse(localStorage.getItem('erius-mp-pos') || 'null'); } catch (e) {}
+        if (saved) {
+          root.style.left = saved.left + 'px';
+          root.style.top  = saved.top  + 'px';
+          root.style.width = saved.w   + 'px';
         }
-      });
-      window.addEventListener('pointerup', function () {
-        if (act) { act = null; savePos(); }
-      });
+        function savePos() {
+          try {
+            localStorage.setItem('erius-mp-pos', JSON.stringify({
+              left: root.offsetLeft, top: root.offsetTop, w: root.offsetWidth
+            }));
+          } catch (e) {}
+        }
+        var act = null, sx = 0, sy = 0, ow = 0, ox = 0, oy = 0;
+        var clamp = function (v, mn, mx) { return Math.min(mx, Math.max(mn, v)); };
+        grip.addEventListener('pointerdown', function (e) {
+          e.preventDefault(); act = 'drag';
+          sx = e.clientX; sy = e.clientY; ox = root.offsetLeft; oy = root.offsetTop;
+          root.setPointerCapture(e.pointerId);
+        });
+        rz.addEventListener('pointerdown', function (e) {
+          e.preventDefault(); e.stopPropagation(); act = 'resize';
+          sx = e.clientX; sy = e.clientY; ow = root.offsetWidth;
+          root.setPointerCapture(e.pointerId);
+        });
+        window.addEventListener('pointermove', function (e) {
+          if (act === 'drag') {
+            root.style.left = clamp(ox + e.clientX - sx, -root.offsetWidth + 60, innerWidth - 40) + 'px';
+            root.style.top  = clamp(oy + e.clientY - sy, 8, innerHeight - 40) + 'px';
+          } else if (act === 'resize') {
+            root.style.width = clamp(ow + (e.clientX - sx), 150, 420) + 'px';
+          }
+        });
+        window.addEventListener('pointerup', function () {
+          if (act) { act = null; savePos(); }
+        });
+      }
     }
-  }
 
-  bootPlayer();
-  document.addEventListener('astro:page-load', bootPlayer);
+    // 初次加载：等 DOM 就绪后 boot（此时 Dashboard 的 persist <audio> 已可复用）
+    function tryBoot() {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+      else boot();
+    }
+    tryBoot();
+    document.addEventListener('astro:page-load', boot);
+  })();
 </script>
