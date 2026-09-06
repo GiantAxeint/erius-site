@@ -1,7 +1,7 @@
 ---
-// /home — Erius 门户 dashboard（v2 改版）
-// 布局：左列(用户卡+最新文章) / 中列(问候+联系条带) / 右列(时钟+日历+音乐+回顶)
-// 每张卡用 style="--i:N" 控制入场动画的延迟（参考 lvy010 的气泡入场）
+// /home — Erius 门户 dashboard（v3：lvy 式错落布局）
+// 视觉中心：问候大卡（方正、渐变、居中）
+// 四周：社交格(中心下方) + 用户/最新文章(左) + 时钟/日历/音乐(右)，错落分布
 import Layout from '../layouts/Dashboard.astro';
 import UserCard from '../components/UserCard.astro';
 import ContactBar from '../components/ContactBar.astro';
@@ -14,59 +14,91 @@ import BackToTop from '../components/BackToTop.astro';
 import { profile, menuItems, socialLinks } from '../data/profile';
 ---
 <Layout title="Erius!">
-  <div class="dash">
-    <aside class="left">
-      <div class="bubble" style="--i:0"><UserCard menuItems={menuItems} /></div>
-      <div class="bubble" style="--i:3"><LatestPostsCard /></div>
-    </aside>
-    <main class="center">
-      <div class="bubble" style="--i:1"><GreetingCard name={profile.name} intro={profile.intro} /></div>
-      <div class="bubble" style="--i:2"><ContactBar links={socialLinks} /></div>
-    </main>
-    <aside class="right">
-      <div class="bubble" style="--i:4"><ClockCard /></div>
-      <div class="bubble" style="--i:5"><CalendarCard /></div>
-      <div class="bubble" style="--i:6"><MusicPlayerCard /></div>
-    </aside>
+  <div class="stage">
+    <div class="dash">
+      <div class="bubble cell left-top" style="--i:0">
+        <UserCard menuItems={menuItems} />
+      </div>
+      <div class="bubble cell center-main" style="--i:1">
+        <GreetingCard name={profile.name} intro={profile.intro} />
+      </div>
+      <div class="bubble cell right-top" style="--i:2">
+        <ClockCard />
+      </div>
+      <div class="bubble cell left-mid" style="--i:3">
+        <LatestPostsCard />
+      </div>
+      <div class="bubble cell center-foot" style="--i:4">
+        <ContactBar links={socialLinks} />
+      </div>
+      <div class="bubble cell right-mid" style="--i:5">
+        <CalendarCard />
+      </div>
+      <div class="bubble cell right-foot" style="--i:6">
+        <MusicPlayerCard />
+      </div>
+    </div>
   </div>
   <BackToTop />
 </Layout>
 
 <style>
-  /* ===== 栅格 ===== */
+  .stage { max-width: 1280px; margin: 0 auto; }
   .dash {
     display: grid;
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "main"
+      "foot"
+      "left"
+      "right";
     gap: 18px;
-    max-width: 1280px;
-    margin: 0 auto;
   }
-  @media (min-width: 900px) {
+  /* 桌面：问候占中心两列宽度，左右卡片错落为"有中心的散落" */
+  @media (min-width: 960px) {
     .dash {
-      grid-template-columns: 240px 1fr 260px;
-      grid-template-areas: "left center right";
+      /* 中心 2 列宽（问候+社交），左右两窄列环绕 */
+      grid-template-columns: minmax(180px, 220px) 1fr minmax(200px, 250px);
+      grid-template-areas:
+        "left-top    main     right-top"
+        "left-mid    main     right-mid"
+        ".           foot     right-foot";
       align-items: start;
+      column-gap: 22px;
+      row-gap: 20px;
     }
-    .left   { grid-area: left;   display: flex; flex-direction: column; gap: 18px; }
-    .center { grid-area: center; display: flex; flex-direction: column; gap: 18px; }
-    .right  { grid-area: right;  display: flex; flex-direction: column; gap: 18px; }
+    /* 让问候卡纵向居中，左右卡互相错开一点更自然（margin 不与动画 transform 冲突） */
+    .left-mid  { margin-top: 6px; }
+    .right-mid { margin-top: 26px; }
+    .right-foot { margin-top: 4px; }
+  }
+
+  .center-main { grid-area: main; }
+  .center-foot { grid-area: foot; justify-self: center; }
+  .left-top    { grid-area: left-top; }
+  .left-mid    { grid-area: left-mid; }
+  .right-top   { grid-area: right-top; }
+  .right-mid   { grid-area: right-mid; }
+  .right-foot  { grid-area: right-foot; }
+
+  /* 问候卡纵向占满中心两格（left-mid 与 main 并排时保持较高视觉重心） */
+  @media (min-width: 960px) {
+    .center-main { display: flex; }
+    .center-main > * { width: 100%; }
   }
 
   /* ===== 气泡入场动画（参考 lvy010） ===== */
-  /* 每张 .bubble 在 home 页加载时缓慢放大并归位，
-     通过 inline style --i 控制错落，cubic-bezier(0.34,1.56,0.64,1) 给一点回弹 */
   .bubble {
     opacity: 0;
     transform: translateY(18px) scale(0.7);
     animation: bubbleIn 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    animation-delay: calc(var(--i, 0) * 0.09s + 0.05s);
+    animation-delay: calc(var(--i, 0) * 0.1s + 0.05s);
   }
   @keyframes bubbleIn {
-    0%   { opacity: 0; transform: translateY(22px) scale(0.65); }
-    60%  { opacity: 1; transform: translateY(-4px) scale(1.04); }
+    0%   { opacity: 0; transform: translateY(24px) scale(0.6); }
+    60%  { opacity: 1; transform: translateY(-4px) scale(1.05); }
     100% { opacity: 1; transform: translateY(0)    scale(1); }
   }
-  /* 尊重系统"减少动效"偏好 */
   @media (prefers-reduced-motion: reduce) {
     .bubble { animation: none; opacity: 1; transform: none; }
   }
