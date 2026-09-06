@@ -1,7 +1,7 @@
 ---
-// /home — Erius 门户 dashboard（v3：lvy 式错落布局）
-// 视觉中心：问候大卡（方正、渐变、居中）
-// 四周：社交格(中心下方) + 用户/最新文章(左) + 时钟/日历/音乐(右)，错落分布
+// /home — Erius 门户 dashboard（v4：以问候大卡"6"为枢纽的向心式布局）
+// 视觉中心：问候大卡（更大、更方正、略偏左下，朝"最新文章"左下对角呼应）
+// 围绕：社交胶囊(下方更近) + 时钟(右上对角，不与日历对齐) + 日历(顶对齐 6 中心) + 音乐(斜右下对角) + 左列 User/最新文章
 import Layout from '../layouts/Dashboard.astro';
 import UserCard from '../components/UserCard.astro';
 import ContactBar from '../components/ContactBar.astro';
@@ -28,11 +28,11 @@ import { profile, menuItems, socialLinks } from '../data/profile';
       <div class="bubble cell left-mid" style="--i:3">
         <LatestPostsCard />
       </div>
-      <div class="bubble cell center-foot" style="--i:4">
-        <ContactBar links={socialLinks} />
-      </div>
-      <div class="bubble cell right-mid" style="--i:5">
+      <div class="bubble cell right-mid" style="--i:4">
         <CalendarCard />
+      </div>
+      <div class="bubble cell center-foot" style="--i:5">
+        <ContactBar links={socialLinks} />
       </div>
       <div class="bubble cell right-foot" style="--i:6">
         <MusicPlayerCard />
@@ -54,37 +54,39 @@ import { profile, menuItems, socialLinks } from '../data/profile';
       "right";
     gap: 18px;
   }
-  /* 桌面：问候居正中，左右两列等宽环绕 */
+  /* 桌面：以问候卡"6"为枢纽的向心式布局
+     - 左列稍窄、给中央问候卡留出大空间
+     - 右列用 3 个 cell 高度错位，让 Clock/Calendar/Music 分别在 6 的右上/中右/右下
+     - 时钟与日历在不同 grid 行 + 不同左偏移，故意错开避免垂直对齐 */
   @media (min-width: 960px) {
     .dash {
-      grid-template-columns: minmax(200px, 240px) minmax(360px, 1fr) minmax(200px, 240px);
+      grid-template-columns: minmax(190px, 220px) minmax(400px, 440px) minmax(190px, 220px);
       grid-template-areas:
         "left-top    main     right-top"
         "left-mid    main     right-mid"
         "left-foot   foot     right-foot";
-      align-items: stretch;
-      column-gap: 22px;
-      row-gap: 22px;
+      align-items: start;
+      column-gap: 14px;
+      row-gap: 14px;
     }
-    /* 左列：与问候顶对齐；右列：中段往下偏移制造错落；底部边缘贴齐 */
+    /* 左列（UserCard/LatestPosts）：与问候卡顶对齐，左列中段卡略下错落 */
     .left-top    { margin-top: 0; }
-    .left-mid    { margin-top: 16px; }
-    .left-foot   { margin-top: 8px; }
-    .right-top   { margin-top: 32px; }
-    .right-mid   { margin-top: 36px; }
-    .right-foot  { margin-top: 18px; }
+    .left-mid    { margin-top: 28px; }
+    /* 右列：时钟往 6 右上对角挪（6 之上偏右），日历顶对齐 6 中心 + 略左贴中央，音乐往 6 斜右下挪 */
+    .right-top   { margin-top: 14px; margin-left: 18px; }   /* 时钟：偏右但不与日历垂直对齐 */
+    .right-mid   { margin-top: 0;   margin-left: -4px; }    /* 日历：顶边对齐 6 中心，略左贴 6 */
+    .right-foot  { margin-top: 14px; margin-left: 12px; }   /* 音乐：向 6 斜右下靠 */
   }
 
-  .center-main { grid-area: main; align-self: center; justify-self: center; width: 100%; max-width: 460px; }
-  .center-foot { grid-area: foot; justify-self: center; }
+  .center-main { grid-area: main; align-self: center; justify-self: center; width: 100%; max-width: 440px; /* 略向左下偏移，朝左列'最新文章'卡的左下对角呼应 */ margin-left: -10px; margin-top: 14px; }
+  .center-foot { grid-area: foot; justify-self: center; margin-top: -18px; }  /* 上移贴近问候卡 */
   .left-top    { grid-area: left-top; }
   .left-mid    { grid-area: left-mid; }
-  .left-foot   { grid-area: left-foot; }
   .right-top   { grid-area: right-top; }
   .right-mid   { grid-area: right-mid; }
   .right-foot  { grid-area: right-foot; }
 
-  /* ===== 气泡入场动画（参考 lvy010） ===== */
+  /* ===== 气泡入场动画 ===== */
   .bubble {
     opacity: 0;
     transform: translateY(18px) scale(0.7);

@@ -37,23 +37,24 @@ const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 </script>
 
 <style>
-  .cal { text-align: center; }
-  .cal-head { font-weight: 600; margin-bottom: 10px; color: var(--color-primary); }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-  .cal-dow { font-size: 0.75rem; color: var(--color-secondary); padding: 2px 0; }
-  .cal-dow-row { margin-bottom: 4px; }
+  .cal { text-align: center; padding: 14px 14px; }
+  .cal-head { font-weight: 600; margin-bottom: 12px; color: var(--color-primary); font-size: 1.05rem; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-dow { font-size: 0.92rem; color: var(--color-secondary); padding: 3px 0; }
+  .cal-dow-row { margin-bottom: 6px; }
   .cal-day {
-    font-size: 0.85rem; padding: 5px 0; border-radius: 6px;
+    /* 整体宽高各 +25%：格子 30 → 38px，字号 0.85 → 1.06rem */
+    font-size: 1.06rem; padding: 6px 0; border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    aspect-ratio: 1 / 1; max-height: 30px; margin: 0 auto;
+    aspect-ratio: 1 / 1; max-height: 38px; margin: 0 auto;
   }
   /* 今日：品牌色圆形高亮 + 白字 + 外圈光晕 */
   .cal-day.today {
     background: var(--color-brand);
     color: #fff;
     font-weight: 700;
-    box-shadow: 0 0 0 3px rgba(53, 191, 171, 0.25);
+    box-shadow: 0 0 0 4px rgba(53, 191, 171, 0.25);
     border-radius: 50%;
   }
-  .cal-empty { padding: 5px 0; }
+  .cal-empty { padding: 6px 0; }
 </style>

@@ -41,13 +41,15 @@ const items = links.filter(l => l.label !== 'Home');
   .chip {
     position: relative;
     display: inline-flex; align-items: center; justify-content: center;
-    width: 46px; height: 46px;
-    border-radius: 14px;
-    background: rgba(255,255,255,.55);
-    border: 1px solid rgba(53,191,171,.25);
+    /* 胶囊形：更宽更长，紧贴问候卡下沿 */
+    min-width: 64px; height: 36px; padding: 0 16px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.6);
+    border: 1px solid rgba(53,191,.25);
     color: var(--color-primary);
-    box-shadow: 0 2px 8px rgba(51,79,82,.06);
+    box-shadow: 0 2px 10px rgba(51,79,82,.07);
     transition: transform .18s, background .18s, border-color .18s;
+    gap: 6px;
   }
   .chip:hover {
     transform: translateY(-3px) scale(1.06);
@@ -55,20 +57,15 @@ const items = links.filter(l => l.label !== 'Home');
     border-color: var(--color-brand);
     text-decoration: none;
   }
-  .c-char { font-size: 1.25rem; color: var(--color-brand); line-height: 1; }
-  .c-svg { width: 22px; height: 22px; }
-  /* 名字：默认隐藏，悬停时冒出来 */
+  .c-char { font-size: 1.15rem; color: var(--color-brand); line-height: 1; }
+  .c-svg { width: 24px; height: 24px; }
+  /* 名字：默认与图标横向并排（胶囊形自带文字感），悬停时微调样式 */
   .c-label {
-    position: absolute; top: -26px; left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.72rem; color: #fff;
-    background: var(--color-primary);
-    padding: 2px 8px; border-radius: 999px;
-    opacity: 0; pointer-events: none;
+    font-size: 0.82rem; color: var(--color-primary);
+    font-weight: 600; letter-spacing: .2px;
     transition: opacity .15s;
     white-space: nowrap;
   }
-  .chip:hover .c-label { opacity: 1; }
   @media (max-width: 700px) {
     .social-chips { justify-content: flex-start; }
   }
