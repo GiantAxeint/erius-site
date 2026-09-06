@@ -93,7 +93,7 @@ export const projects: ProjectItem[] = [
   },
   {
     title: 'DSH-P2M DSH插件',
-    description: 'cordis/dsh/dsh-plugin',
+    description: 'cordis/dsh/dsh-plugin 插件冲突处理管家',
     tags: ['Agent', 'DSH-PLUGIN'],
     href: 'https://github.com/GiantAxeint/DSH-P2M',  
   },
