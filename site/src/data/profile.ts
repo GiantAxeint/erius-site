@@ -20,6 +20,7 @@ export interface SocialLink {
   label: string;
   url: string;
   icon: string; // emoji 或 svg 路径占位
+  handle?: string; // 名片页(/index)展示的账号文本，如 @xxx / 邮箱；不填则名片页回退用默认
 }
 
 export interface Profile {
@@ -73,8 +74,9 @@ export const menuItems: MenuItem[] = [
 
 // ---------- 4. 社交链接（改这里） ----------
 export const socialLinks: SocialLink[] = [
-  { label: 'Email', url: 'mailto:2890386344@qq.com', icon: '✉' },
-  { label: 'GitHub', url: 'https://github.com/GiantAxeint', icon: '◈' },
+  { label: 'Email', url: 'mailto:2890386344@qq.com', icon: '✉', handle: '2890386344@qq.com' },
+  { label: 'GitHub', url: 'https://github.com/GiantAxeint', icon: '◈', handle: '@Erius' },
+  { label: 'LeetCode', url: 'https://leetcode.cn/u/erius/', icon: '⌬', handle: 'erius' },
   { label: 'Home', url: '/', icon: '⌂' },
 ];
 

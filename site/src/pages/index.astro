@@ -35,7 +35,7 @@ import '../styles/global.css';
     <div class="contact">
       {
         socialLinks.filter(l => l.label !== 'Home').map(l => (
-          <div class="contact-item">* {l.label}: <a href={l.url} target={l.label === 'GitHub' ? '_blank' : undefined}>{l.label === 'GitHub' ? '@Erius' : '2890386344@qq.com'}</a></div>
+          <div class="contact-item">* {l.label}: <a href={l.url} target={l.url.startsWith('http') ? '_blank' : undefined} rel={l.url.startsWith('http') ? 'noopener' : undefined}>{l.handle ?? l.label}</a></div>
         ))
       }
     </div>

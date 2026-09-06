@@ -4,6 +4,7 @@
 // 返回按钮：访问子页（/about /projects /tinkering /journal /404）时左上角显示，点击回 /home
 import '../styles/global.css';
 import { menuItems } from '../data/profile';
+import NavIcon from '../components/NavIcon.astro';
 interface Props {
   title: string;
 }
@@ -40,7 +41,10 @@ const isSubPage = !isHome && path !== '/' && path !== '/index.html';
         <a
           href={item.href}
           class:list={[{ 'nav-active': path.startsWith(item.href) }]}
-        >{item.label}</a>
+        >
+          <NavIcon name={item.key} size={15} />
+          <span>{item.label}</span>
+        </a>
       ))}
       <span class="nav-sep"></span>
       <a href="/home" class:list={[{ 'nav-active': path === '/home' }]}>门户</a>
@@ -81,7 +85,8 @@ const isSubPage = !isHome && path !== '/' && path !== '/index.html';
   }
   .back-arrow { font-size: 1.1rem; }
   .main-nav { display: flex; align-items: center; gap: 14px; font-size: 1rem; flex-wrap: wrap; }
-  .main-nav a { color: var(--color-primary); opacity: .65; padding: 2px 2px; }
+  .main-nav a { color: var(--color-primary); opacity: .65; padding: 2px 2px; display: inline-flex; align-items: center; gap: 5px; }
+  .main-nav a svg { flex-shrink: 0; }
   .main-nav a:hover { opacity: 1; }
   .main-nav a.nav-active { opacity: 1; color: var(--color-brand); font-weight: 600; }
   .nav-sep { width: 1px; height: 16px; background: var(--color-secondary); opacity: .4; }

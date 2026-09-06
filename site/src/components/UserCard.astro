@@ -3,6 +3,7 @@
 // 菜单指向独立页（/posts /projects /about），进入对应页自动高亮
 import { profile } from '../data/profile';
 import type { MenuItem } from '../data/profile';
+import NavIcon from './NavIcon.astro';
 interface Props { menuItems: MenuItem[]; }
 const { menuItems } = Astro.props;
 const path = Astro.url.pathname;
@@ -22,7 +23,10 @@ const path = Astro.url.pathname;
         href={item.href}
         data-menu={item.key}
         class:list={[{ active: path.startsWith(item.href) }]}
-      >{item.label}</a>
+      >
+        <NavIcon name={item.key} size={16} />
+        <span>{item.label}</span>
+      </a>
     ))}
   </nav>
 </div>
@@ -49,7 +53,9 @@ const path = Astro.url.pathname;
   .menu a {
     padding: 7px 10px; border-radius: 8px; font-size: 0.95rem;
     color: var(--color-primary); text-align: left;
+    display: flex; align-items: center; gap: 9px;
   }
+  .menu a svg { flex-shrink: 0; }
   .menu a:hover { background: rgba(53,191,171,.12); text-decoration: none; }
   .menu a.active {
     background: rgba(53,191,171,.15);
