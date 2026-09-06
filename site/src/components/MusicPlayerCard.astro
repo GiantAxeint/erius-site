@@ -193,7 +193,7 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
   //      修复：统一按 decodeURIComponent 后的 basename 匹配。
   // ============================================================
   (function () {
-    var S = window.__eriusMP = window.__eriusMP || { bound: false, ui: null, songs: [], idx: -1, audio: null };
+    var S = window.__eriusMP = window.__eriusMP || { bound: false, ui: null, songs: [], idx: -1, audio: null, reqToken: 0 };
 
     function ensureAudio() {
       if (S.audio && document.body.contains(S.audio)) return S.audio;
@@ -235,6 +235,7 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
     function playSrc(i) {
       if (!S.songs.length) return;
       if (i < 0 || i >= S.songs.length) i = 0;
+      var token = ++S.reqToken;   // 竞态令牌：只有最新一次切歌请求允许改按钮态
       S.idx = i;
       var a = ensureAudio();
       a.src = S.songs[i].file;
@@ -242,11 +243,14 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
       if (ui) {
         ui.nameEl.textContent = S.songs[i].name;
         ui.seekEl.value = '0';
-        ui.timeEl.textContent = '0:00 / 0:00';
+        ui.timeEl.textContent = '加载中…';   // 诚实反馈缓冲状态，不再是假 0:00
       }
+      setPlayIcon('loading');                // ⏳ 而非 ⏸：让用户知道正在缓冲
       var p = a.play();
-      if (p && p.catch) p.catch(function () { setPlayIcon(false); }); // 自动播放被拦 → 按钮回退 ▶
-      setPlayIcon(true);
+      if (p && p.catch) p.catch(function () {
+        // 仅最新请求可回退按钮；旧请求被 abort 时不覆盖新状态
+        if (token === S.reqToken) setPlayIcon('play');
+      });
     }
     function pickRandom() {
       if (!S.songs.length) return;
@@ -271,15 +275,17 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
       if (!a.src) { pickRandom(); return; }   // 从未选歌：先随机起播
       if (a.paused) {
         var p = a.play();
-        if (p && p.catch) p.catch(function () { setPlayIcon(false); });
-        setPlayIcon(true);
+        if (p && p.catch) p.catch(function () { setPlayIcon('play'); });
+        setPlayIcon('pause');
       } else {
         a.pause();
-        setPlayIcon(false);
+        setPlayIcon('play');
       }
     }
-    function setPlayIcon(playing) {
-      if (S.ui) S.ui.playBtn.textContent = playing ? '⏸' : '▶';
+    function setPlayIcon(state) {
+      if (!S.ui) return;
+      if (state === 'loading') { S.ui.playBtn.textContent = '⏳'; return; }  // 缓冲/切歌中
+      S.ui.playBtn.textContent = state === 'pause' ? '⏸' : '▶';
     }
     function syncUIFromAudio() {
       var ui = S.ui, a = ensureAudio();
@@ -313,8 +319,10 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
         ui.seekEl.value = String(Math.floor((a.currentTime / a.duration) * 1000));
         ui.timeEl.textContent = fmt(a.currentTime) + ' / ' + fmt(a.duration);
       });
-      ensureAudio().addEventListener('play',  function () { setPlayIcon(true); });
-      ensureAudio().addEventListener('pause', function () { setPlayIcon(false); });
+      ensureAudio().addEventListener('play',     function () { setPlayIcon('pause'); });
+      ensureAudio().addEventListener('playing',  function () { setPlayIcon('pause'); });
+      ensureAudio().addEventListener('pause',    function () { setPlayIcon('play'); });
+      ensureAudio().addEventListener('waiting',  function () { setPlayIcon('loading'); });  // 缓冲不足
       ensureAudio().addEventListener('loadedmetadata', syncUIFromAudio);
       ensureAudio().addEventListener('ended', pickRandom);   // 单曲播完自动随机下一首
     }
@@ -345,12 +353,12 @@ const songs = raw.map(f => ({ file: `/music/${f}`, name: f.replace(exts, '') }))
       prevBtn.addEventListener('click', pickPrev);
       nextBtn.addEventListener('click', pickRandom);
 
-      // seek：拖动期间不回写；input 前校验 duration（防 NaN 卡死）
+      // seek：拖动期间不回写；input 前校验 duration（防 NaN 卡死；缓冲未完不打断加载）
       seekEl.addEventListener('pointerdown', function () { seekEl.dataset.dragging = '1'; });
       seekEl.addEventListener('pointerup',   function () { seekEl.dataset.dragging = '0'; });
       seekEl.addEventListener('input', function () {
         var a = ensureAudio();
-        if (!isFinite(a.duration) || a.duration <= 0) { if (a.src) a.load(); return; }
+        if (!isFinite(a.duration) || a.duration <= 0) return;  // metadata 未就绪：忽略，绝不 load() 重置加载
         a.currentTime = (Number(seekEl.value) / 1000) * a.duration;
       });
 
