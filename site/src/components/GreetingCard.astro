@@ -1,22 +1,46 @@
 ---
 // 问候卡：方正主卡，页面视觉中心
+// 布局（自上而下）：
+//   1. 动态时段问候语（顶部小字）
+//   2. "Hi！I'm Erius"（中间最大字）
+//   3. "Regain lost courage!"（底部中等字）
 interface Props { name: string; intro: string; }
 const { name, intro } = Astro.props;
 ---
 <div class="card greet">
-  <p class="hello hand" id="greet-phrase">Hello</p>
-  <h1 class="hand name">I'm {name}</h1>
+  <p class="hello hand" id="greet-phrase">good morning</p>
+  <h1 class="hand name">Hi！I'm {name}</h1>
   <p class="intro">{intro}</p>
   <div class="deco deco-1"></div>
   <div class="deco deco-2"></div>
 </div>
 
-<script>
-  const el = document.getElementById('greet-phrase');
-  if (el) {
-    const h = new Date().getHours();
-    el.textContent = h < 6 ? 'Good Night' : h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
+<script is:inline>
+  // ============================================================
+  // 时段映射（用户定义）：
+  //   05:00-11:59 → good morning
+  //   12:00-13:59 → good noon       （正午时段）
+  //   14:00-17:59 → good afternoon
+  //   18:00-04:59 → good evening
+  // 文案全小写；切换逻辑每分钟跑一次以应对跨时段边界。
+  // View Transitions 下必须挂 astro:page-load，每次导航都重跑。
+  // ============================================================
+  function bootGreet() {
+    const el = document.getElementById('greet-phrase');
+    if (!el) return;
+    function pickGreeting(h) {
+      if (h >= 5  && h < 12) return 'good morning';
+      if (h >= 12 && h < 14) return 'good noon';
+      if (h >= 14 && h < 18) return 'good afternoon';
+      return 'good evening';   // 18..23 与 0..4
+    }
+    function refresh() { el.textContent = pickGreeting(new Date().getHours()); }
+    refresh();
+    if (window.__eriusGreetTimer) clearInterval(window.__eriusGreetTimer);
+    window.__eriusGreetTimer = setInterval(refresh, 60 * 1000);
   }
+  bootGreet();
+  document.addEventListener('astro:page-load', bootGreet);
 </script>
 
 <style>
@@ -24,7 +48,6 @@ const { name, intro } = Astro.props;
     position: relative;
     text-align: center;
     padding: 44px 30px;
-    /* 方正主卡：品牌渐变 + 白字，观感成为页面重心 */
     background: linear-gradient(135deg, #35bfab 0%, #2ba3c9 100%);
     border: none;
     color: #fff;
@@ -32,17 +55,24 @@ const { name, intro } = Astro.props;
     box-shadow: 0 12px 32px rgba(53, 191, 171, 0.28);
     overflow: hidden;
   }
+  /* 顶层（动态问候语）：最小字 */
   .greet .hello {
     color: rgba(255,255,255,.85);
-    font-size: 1.5rem;
-    margin-bottom: 8px;
+    font-size: 1.0rem;            /* 比 intro 小一点 */
+    margin-bottom: 6px;
   }
-  .greet h1 { color: #fff; font-size: 3.1rem; margin-bottom: 12px; }
+  /* 中间层（Hi！I'm Erius）：最大字 */
+  .greet h1 {
+    color: #fff;
+    font-size: 3.1rem;            /* 保持页面视觉重心 */
+    margin-bottom: 10px;
+  }
+  /* 底层（Regain lost courage!）：中等字，比 hello 大，比 h1 小 */
   .greet .intro {
-    color: rgba(255,255,255,.9);
-    font-size: 1.05rem;
+    color: rgba(255,255,255,.92);
+    font-size: 1.4rem;            /* 介于 hello 与 h1 之间 */
   }
-  /* 点缀：低透明度圆，呼应气泡动效 */
+  /* 点缀：低透明度圆 */
   .deco { position: absolute; border-radius: 50%; pointer-events: none; }
   .deco-1 {
     width: 110px; height: 110px; right: -28px; top: -28px;
