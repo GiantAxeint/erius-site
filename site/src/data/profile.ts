@@ -92,9 +92,15 @@ export const projects: ProjectItem[] = [
     href: 'https://github.com/GiantAxeint/luobi-polish',
   },
   {
-    title: 'Agent Harness 折腾记',
-    description: 'dsh / opencode / Claude Code / Codex 全家桶落地',
-    tags: ['Agent', 'CLI'],
-    href: 'https://github.com/GiantAxeint',  // 无独立仓库时指向 GitHub 主页
+    title: 'DSH-P2M DSH插件',
+    description: 'cordis/dsh/dsh-plugin',
+    tags: ['Agent', 'DSH-PLUGIN'],
+    href: 'https://github.com/GiantAxeint/DSH-P2M',  
+  },
+   {
+    title: 'development-and-guidance-skills',
+    description: 'skill/workflow/coding-discipline',
+    tags: ['Agent', 'SKILL'],
+    href: 'https://github.com/GiantAxeint/development-and-guidance-skills',  
   },
 ];
