@@ -1,16 +1,14 @@
 ---
-// Dashboard 布局：公共 head + 顶部导航（所有页共享）+ 内容插槽
-// 顶栏含：返回按钮（子页显示）+ 品牌 + 菜单
-// 返回按钮：访问子页（/about /projects /tinkering /journal /404）时左上角显示，点击回 /home
+// Dashboard 布局：公共 head + 极简顶部（仅品牌/返回按钮）+ 内容插槽
+// home 页是门户（用户从 /home 一眼看完所有入口）；
+// 子页靠左侧 UserCard 自身的导航，不需要顶部再放一遍
 import '../styles/global.css';
-import { menuItems } from '../data/profile';
-import NavIcon from '../components/NavIcon.astro';
+import { profile } from '../data/profile';
 interface Props {
   title: string;
 }
 const { title } = Astro.props;
 const path = Astro.url.pathname;
-// 是否在主页门户（主页不显示返回按钮）
 const isHome = path === '/home' || path === '/home/' || path === '/home/index.html';
 const isSubPage = !isHome && path !== '/' && path !== '/index.html';
 ---
@@ -34,22 +32,8 @@ const isSubPage = !isHome && path !== '/' && path !== '/index.html';
           <span class="back-arrow">←</span> 返回
         </a>
       )}
-      <a class="brand hand" href="/">Erius</a>
+      <a class="brand hand" href="/">{profile.name}</a>
     </div>
-    <nav class="main-nav">
-      {menuItems.map(item => (
-        <a
-          href={item.href}
-          class:list={[{ 'nav-active': path.startsWith(item.href) }]}
-        >
-          <NavIcon name={item.key} size={15} />
-          <span>{item.label}</span>
-        </a>
-      ))}
-      <span class="nav-sep"></span>
-      <a href="/home" class:list={[{ 'nav-active': path === '/home' }]}>门户</a>
-      <a href="/">名片</a>
-    </nav>
   </header>
   <main>
     <slot />
@@ -62,7 +46,7 @@ const isSubPage = !isHome && path !== '/' && path !== '/index.html';
 
 <style>
   .topbar {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: flex-start;
     flex-wrap: wrap; gap: 8px 16px;
     max-width: 1280px; margin: 0 auto 20px; padding: 10px 6px;
   }
@@ -84,12 +68,6 @@ const isSubPage = !isHome && path !== '/' && path !== '/index.html';
     background: var(--color-brand); color: #fff; text-decoration: none;
   }
   .back-arrow { font-size: 1.1rem; }
-  .main-nav { display: flex; align-items: center; gap: 14px; font-size: 1rem; flex-wrap: wrap; }
-  .main-nav a { color: var(--color-primary); opacity: .65; padding: 2px 2px; display: inline-flex; align-items: center; gap: 5px; }
-  .main-nav a svg { flex-shrink: 0; }
-  .main-nav a:hover { opacity: 1; }
-  .main-nav a.nav-active { opacity: 1; color: var(--color-brand); font-weight: 600; }
-  .nav-sep { width: 1px; height: 16px; background: var(--color-secondary); opacity: .4; }
   .foot {
     max-width: 1280px; margin: 26px auto 0; text-align: center;
     color: var(--color-secondary); font-size: 0.9rem;
@@ -97,6 +75,5 @@ const isSubPage = !isHome && path !== '/' && path !== '/index.html';
   @media (max-width: 700px) {
     .topbar { flex-direction: column; align-items: stretch; }
     .top-left { justify-content: space-between; }
-    .main-nav { justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; }
   }
 </style>

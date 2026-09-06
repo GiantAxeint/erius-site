@@ -1,82 +1,39 @@
 ---
-// /home — Erius 门户 dashboard
-// 问候 + 最新折腾/随笔预览 + 项目；完整列表在独立页
+// /home — Erius 门户 dashboard（v2 改版）
+// 布局：左列(用户卡+最新文章) / 中列(问候+联系条带) / 右列(时钟+日历+音乐+回顶)
+// 每张卡用 style="--i:N" 控制入场动画的延迟（参考 lvy010 的气泡入场）
 import Layout from '../layouts/Dashboard.astro';
 import UserCard from '../components/UserCard.astro';
+import ContactBar from '../components/ContactBar.astro';
 import GreetingCard from '../components/GreetingCard.astro';
-import AboutCard from '../components/AboutCard.astro';
 import ClockCard from '../components/ClockCard.astro';
 import CalendarCard from '../components/CalendarCard.astro';
-import ProjectsCard from '../components/ProjectsCard.astro';
-import SocialCard from '../components/SocialCard.astro';
-import { getCollection } from 'astro:content';
-import { profile, menuItems, projects, socialLinks } from '../data/profile';
-
-// 最新折腾日记 + 随笔（各取最新 2 篇预览）
-const [tinkering, journal] = await Promise.all([
-  getCollection('tinkering'),
-  getCollection('journal'),
-]);
-const latestTinkering = tinkering.sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 2);
-const latestJournal = journal.sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 2);
-
-function fmtDate(d: Date): string {
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
-}
+import LatestPostsCard from '../components/LatestPostsCard.astro';
+import MusicPlayerCard from '../components/MusicPlayerCard.astro';
+import BackToTop from '../components/BackToTop.astro';
+import { profile, menuItems, socialLinks } from '../data/profile';
 ---
 <Layout title="Erius!">
   <div class="dash">
     <aside class="left">
-      <UserCard menuItems={menuItems} />
-      <SocialCard links={socialLinks} />
+      <div class="bubble" style="--i:0"><UserCard menuItems={menuItems} /></div>
+      <div class="bubble" style="--i:3"><LatestPostsCard /></div>
     </aside>
     <main class="center">
-      <GreetingCard name={profile.name} intro={profile.intro} />
-      <AboutCard />
-      <!-- 折腾日记最新 -->
-      <section class="card feed">
-        <div class="feed-head">
-          <h3 class="card-title hand">折腾日记</h3>
-          <a class="feed-more" href="/tinkering">全部 →</a>
-        </div>
-        {latestTinkering.length > 0 ? (
-          <ul class="feed-list">
-            {latestTinkering.map(p => (
-              <li class="feed-item">
-                <a class="feed-title" href={`/tinkering/${p.id}`}>{p.data.title}</a>
-                <span class="feed-date">{fmtDate(p.data.date)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : <p class="feed-empty">还没有折腾日记</p>}
-      </section>
-      <!-- 随笔日记最新 -->
-      <section class="card feed">
-        <div class="feed-head">
-          <h3 class="card-title hand">随笔日记</h3>
-          <a class="feed-more" href="/journal">全部 →</a>
-        </div>
-        {latestJournal.length > 0 ? (
-          <ul class="feed-list">
-            {latestJournal.map(p => (
-              <li class="feed-item">
-                <a class="feed-title" href={`/journal/${p.id}`}>{p.data.title}</a>
-                <span class="feed-date">{fmtDate(p.data.date)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : <p class="feed-empty">还没有随笔日记</p>}
-      </section>
-      <ProjectsCard items={projects} />
+      <div class="bubble" style="--i:1"><GreetingCard name={profile.name} intro={profile.intro} /></div>
+      <div class="bubble" style="--i:2"><ContactBar links={socialLinks} /></div>
     </main>
     <aside class="right">
-      <ClockCard />
-      <CalendarCard />
+      <div class="bubble" style="--i:4"><ClockCard /></div>
+      <div class="bubble" style="--i:5"><CalendarCard /></div>
+      <div class="bubble" style="--i:6"><MusicPlayerCard /></div>
     </aside>
   </div>
+  <BackToTop />
 </Layout>
 
 <style>
+  /* ===== 栅格 ===== */
   .dash {
     display: grid;
     grid-template-columns: 1fr;
@@ -90,17 +47,27 @@ function fmtDate(d: Date): string {
       grid-template-areas: "left center right";
       align-items: start;
     }
-    .left { grid-area: left; display: flex; flex-direction: column; gap: 18px; }
+    .left   { grid-area: left;   display: flex; flex-direction: column; gap: 18px; }
     .center { grid-area: center; display: flex; flex-direction: column; gap: 18px; }
-    .right { grid-area: right; display: flex; flex-direction: column; gap: 18px; }
+    .right  { grid-area: right;  display: flex; flex-direction: column; gap: 18px; }
   }
-  .feed-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
-  .card-title { font-size: 1.3rem; color: var(--color-primary); }
-  .feed-more { font-size: 0.85rem; color: var(--color-brand); }
-  .feed-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-  .feed-item { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .feed-title { color: var(--color-primary); font-size: 0.98rem; }
-  .feed-title:hover { color: var(--color-brand); }
-  .feed-date { font-size: 0.78rem; color: var(--color-secondary); white-space: nowrap; font-family: var(--font-body); }
-  .feed-empty { color: var(--color-secondary); font-size: 0.9rem; }
+
+  /* ===== 气泡入场动画（参考 lvy010） ===== */
+  /* 每张 .bubble 在 home 页加载时缓慢放大并归位，
+     通过 inline style --i 控制错落，cubic-bezier(0.34,1.56,0.64,1) 给一点回弹 */
+  .bubble {
+    opacity: 0;
+    transform: translateY(18px) scale(0.7);
+    animation: bubbleIn 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: calc(var(--i, 0) * 0.09s + 0.05s);
+  }
+  @keyframes bubbleIn {
+    0%   { opacity: 0; transform: translateY(22px) scale(0.65); }
+    60%  { opacity: 1; transform: translateY(-4px) scale(1.04); }
+    100% { opacity: 1; transform: translateY(0)    scale(1); }
+  }
+  /* 尊重系统"减少动效"偏好 */
+  @media (prefers-reduced-motion: reduce) {
+    .bubble { animation: none; opacity: 1; transform: none; }
+  }
 </style>

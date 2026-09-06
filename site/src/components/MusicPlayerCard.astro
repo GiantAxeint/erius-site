@@ -1,0 +1,142 @@
+---
+// 随机播放歌曲
+// 把 .mp3/.m4a/.ogg/.wav 放到 site/public/music/，文件名（不含后缀）会作为歌名显示
+// 列表在 build 时扫描，路径打进 HTML；客户端控制播放
+import { readdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+const musicDir = join(process.cwd(), 'public', 'music');
+const exts = /\.(mp3|m4a|ogg|wav|aac|flac)$/i;
+const raw = existsSync(musicDir)
+  ? readdirSync(musicDir).filter(f => exts.test(f)).sort()
+  : [];
+// 去掉扩展名作为歌名展示
+const songs = raw.map(f => ({
+  file: `/music/${f}`,
+  name: f.replace(exts, ''),
+}));
+---
+<div class="card music">
+  <h3 class="card-title hand">随机播放歌曲</h3>
+  {songs.length === 0 ? (
+    <p class="empty">暂无歌曲。<br />把音频文件（.mp3 等）放到 <code>site/public/music/</code> 目录，重新部署即可。</p>
+  ) : (
+    <div class="player" data-songs={JSON.stringify(songs)}>
+      <div class="now">
+          <span class="dot"></span>
+          <span class="name" id="music-name">就绪</span>
+        </div>
+        <audio id="audio" preload="none"></audio>
+        <div class="bar">
+          <span class="cur" id="cur">0:00</span>
+          <input type="range" id="seek" min="0" max="100" value="0" step="0.1" />
+          <span class="dur" id="dur">0:00</span>
+        </div>
+        <div class="ctrl">
+          <button class="btn" id="prev" title="上一首">⏮</button>
+          <button class="btn play" id="play" title="播放/暂停">▶</button>
+          <button class="btn" id="next" title="下一首">⏭</button>
+          <div class="vol">
+            <span>🔈</span>
+            <input type="range" id="vol" min="0" max="100" value="55" />
+          </div>
+        </div>
+        <p class="tip">共 <b>{songs.length}</b> 首，每次播放随机抽一首</p>
+    </div>
+  )}
+</div>
+
+<script>
+  // 客户端：随机、播放控制、进度条、音量
+  const root = document.querySelector('.player') as HTMLElement | null;
+  if (root) {
+    const songs: { file: string; name: string }[] = JSON.parse(root.dataset.songs || '[]');
+    const audio = document.getElementById('audio') as HTMLAudioElement;
+    const nameEl = document.getElementById('music-name') as HTMLElement;
+    const playBtn = document.getElementById('play') as HTMLButtonElement;
+    const prevBtn = document.getElementById('prev') as HTMLButtonElement;
+    const nextBtn = document.getElementById('next') as HTMLButtonElement;
+    const seek = document.getElementById('seek') as HTMLInputElement;
+    const curEl = document.getElementById('cur') as HTMLElement;
+    const durEl = document.getElementById('dur') as HTMLElement;
+    const vol = document.getElementById('vol') as HTMLInputElement;
+    audio.volume = Number(vol.value) / 100;
+
+    let idx = -1;
+    function fmt(s: number) {
+      if (!isFinite(s) || s < 0) return '0:00';
+      const m = Math.floor(s / 60);
+      const r = Math.floor(s % 60);
+      return `${m}:${String(r).padStart(2, '0')}`;
+    }
+    function pick(rand = true) {
+      if (songs.length === 0) return;
+      let i = rand ? Math.floor(Math.random() * songs.length) : (idx + 1) % songs.length;
+      if (!rand && idx === -1) i = 0;
+      idx = i;
+      audio.src = songs[i].file;
+      nameEl.textContent = songs[i].name;
+      audio.play().catch(() => { /* 浏览器拦截时让用户手动点 */ });
+      playBtn.textContent = '⏸';
+    }
+    playBtn.addEventListener('click', () => {
+      if (!audio.src) { pick(); return; }
+      if (audio.paused) { audio.play(); playBtn.textContent = '⏸'; }
+      else { audio.pause(); playBtn.textContent = '▶'; }
+    });
+    prevBtn.addEventListener('click', () => pick(false));
+    nextBtn.addEventListener('click', () => pick(true));
+    vol.addEventListener('input', () => { audio.volume = Number(vol.value) / 100; });
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      seek.value = String((audio.currentTime / audio.duration) * 100);
+      curEl.textContent = fmt(audio.currentTime);
+      durEl.textContent = fmt(audio.duration);
+    });
+    seek.addEventListener('input', () => {
+      if (audio.duration) audio.currentTime = (Number(seek.value) / 100) * audio.duration;
+    });
+    audio.addEventListener('ended', () => pick(true));
+  }
+</script>
+
+<style>
+  .card-title { font-size: 1.3rem; margin-bottom: 12px; color: var(--color-primary); }
+  .empty {
+    color: var(--color-secondary); font-size: 0.88rem; line-height: 1.6;
+    text-align: center; padding: 10px 0;
+  }
+  .empty code {
+    background: rgba(53,191,171,.14); color: var(--color-brand);
+    padding: 1px 6px; border-radius: 4px; font-size: 0.85em;
+  }
+  .player { display: flex; flex-direction: column; gap: 10px; }
+  .now { display: flex; align-items: center; gap: 8px; }
+  .now .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--color-brand);
+    box-shadow: 0 0 0 4px rgba(53,191,171,.2);
+  }
+  .now .name {
+    font-weight: 600; color: var(--color-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bar { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--color-secondary); }
+  .bar input[type=range] { flex: 1; accent-color: var(--color-brand); }
+  .ctrl { display: flex; align-items: center; gap: 8px; }
+  .btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid rgba(53,191,171,.3); background: rgba(255,255,255,.5);
+    cursor: pointer; font-size: 0.95rem; color: var(--color-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .btn:hover { background: rgba(53,191,171,.18); }
+  .btn.play {
+    background: var(--color-brand); color: #fff; border-color: var(--color-brand);
+    width: 42px; height: 42px; font-size: 1.05rem;
+  }
+  .btn.play:hover { background: var(--color-brand-secondary); border-color: var(--color-brand-secondary); }
+  .vol { display: flex; align-items: center; gap: 4px; margin-left: auto; flex: 0 0 110px; }
+  .vol input[type=range] { flex: 1; accent-color: var(--color-brand); }
+  .tip { font-size: 0.75rem; color: var(--color-secondary); margin-top: 4px; }
+  .tip b { color: var(--color-brand); }
+</style>
