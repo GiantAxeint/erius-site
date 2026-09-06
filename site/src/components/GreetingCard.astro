@@ -8,7 +8,7 @@ interface Props { name: string; intro: string; }
 const { name, intro } = Astro.props;
 ---
 <div class="card greet">
-  <p class="hello hand" id="greet-phrase">good morning</p>
+  <p class="hello hand" id="greet-phrase">Good morning</p>
   <h1 class="hand name">Hi！I'm {name}</h1>
   <p class="intro">{intro}</p>
   <div class="deco deco-1"></div>
@@ -29,10 +29,10 @@ const { name, intro } = Astro.props;
     const el = document.getElementById('greet-phrase');
     if (!el) return;
     function pickGreeting(h) {
-      if (h >= 5  && h < 12) return 'good morning';
-      if (h >= 12 && h < 14) return 'good noon';
-      if (h >= 14 && h < 18) return 'good afternoon';
-      return 'good evening';   // 18..23 与 0..4
+      if (h >= 5  && h < 12) return 'Good morning';
+      if (h >= 12 && h < 14) return 'Good noon';
+      if (h >= 14 && h < 18) return 'Good afternoon';
+      return 'Good evening';   // 18..23 与 0..4
     }
     function refresh() { el.textContent = pickGreeting(new Date().getHours()); }
     refresh();
