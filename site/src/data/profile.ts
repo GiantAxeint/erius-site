@@ -105,4 +105,10 @@ export const projects: ProjectItem[] = [
     tags: ['Agent', 'SKILL'],
     href: 'https://github.com/GiantAxeint/development-and-guidance-skills',  
   },
+  {
+    title: 'leetcode刷题调度',
+    description: 'leetcode-scheduler：按题间隔复习的本地刷题调度器（同步 Obsidian）',
+    tags: ['Python', 'Obsidian'],
+    href: 'https://github.com/GiantAxeint/leetcode-scheduler',
+  },
 ];
